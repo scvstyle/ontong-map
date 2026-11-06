@@ -1,0 +1,29 @@
+name: update-prices
+on:
+  schedule:
+    - cron: '7 21,1,5,9 * * *'   # 한국시간 06:07, 10:07, 14:07, 18:07 (GitHub 사정으로 조금 늦어질 수 있어요)
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['scripts/fetch_prices.py', '.github/workflows/prices.yml']
+permissions:
+  contents: write
+concurrency: prices
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 오피넷 가격 가져오기
+        run: python3 scripts/fetch_prices.py
+        env:
+          OPINET_KEY: ${{ secrets.OPINET_KEY }}
+      - name: 바뀌었으면 저장
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          [ -f prices.json ] || exit 0
+          git add prices.json
+          git diff --cached --quiet && exit 0
+          git commit -m "가격 갱신 $(TZ=Asia/Seoul date '+%m-%d %H:%M')"
+          git pull --rebase -q && git push
