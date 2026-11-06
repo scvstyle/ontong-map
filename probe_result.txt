@@ -1,0 +1,31 @@
+runner ip: 20.169.78.243
+== https://www.opinet.co.kr/api/avgAllPrice.do?out=json&code=TEST
+http=200 time=0.703740
+
+                                
+
+ 
+{"RESULT": 
+{"OIL":[ 
+
+                                               
+]} }
+
+
+
+
+== http://www.opinet.co.kr/api/avgAllPrice.do?out=json&code=TEST
+http=200 time=0.395173
+
+                                
+
+ 
+{"RESULT": 
+{"OIL":[ 
+
+                                               
+]} }
+
+
+
+
