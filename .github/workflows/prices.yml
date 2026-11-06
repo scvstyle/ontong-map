@@ -1,3 +1,4 @@
+# 오피넷 키는 저장소 Settings > Secrets > Actions 의 OPINET_KEY 에 있어요.
 name: update-prices
 on:
   schedule:
