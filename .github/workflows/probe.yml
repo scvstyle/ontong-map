@@ -1,0 +1,26 @@
+name: probe-opinet
+on:
+  push:
+    branches: [probe]
+permissions:
+  contents: write
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: try opinet
+        run: |
+          {
+            echo "runner ip: $(curl -s -m 10 https://api.ipify.org)"
+            for u in "https://www.opinet.co.kr/api/avgAllPrice.do?out=json&code=TEST" "http://www.opinet.co.kr/api/avgAllPrice.do?out=json&code=TEST"; do
+              echo "== $u"
+              curl -sS -m 25 -o body.txt -w "http=%{http_code} time=%{time_total}\n" "$u" 2>&1 || echo "curl failed: $?"
+              head -c 400 body.txt 2>/dev/null; echo
+            done
+          } > probe_result.txt 2>&1
+          cat probe_result.txt
+      - name: save result
+        run: |
+          git config user.name "probe-bot"; git config user.email "probe@users.noreply.github.com"
+          git add probe_result.txt && git commit -m "probe result" && git push origin probe
