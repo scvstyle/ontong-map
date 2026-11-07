@@ -328,7 +328,7 @@ function fitCard(){ const c=document.querySelector('.card'); if(!c||!map.panBy) 
   if(r.left<mw.left+8) dx=r.left-mw.left-8; else if(r.right>mw.right-8) dx=r.right-mw.right+8;
   if(dx||dy) map.panBy(dx,dy); }
 function infoHtml(){ return `<b>온통대전 앱의 캐시백 표시를 옮긴 비공식 지도예요.</b> 결제 전 앱에서 한 번 더 확인하세요.<br>가맹점: 앱 표시 기준 2026-11-05${PU?` · 가격: 오피넷 ${esc(when(PU))}`:''}${FORM?`<br><a href="${reportUrl()}" target="_blank" rel="noopener">정보 제보하기</a>`:''}`; }
-function openCard(i, pan){
+function openCard(i, pan){ userTouched=true;
   const p=DATA[i];
   hideCard(); closeInfo();
   overlay = new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(p.y,p.x), content:card(p,i), yAnchor:1, zIndex:10, clickable:true});
@@ -379,11 +379,20 @@ let myCircle=null;
 // 내 위치: ① 빠른 위치(와이파이·기지국·최근 위치)로 바로 이동 → ② GPS 정밀 위치가 오면 점만 조용히 보정
 let locBusy=false, lastPos=null;
 // 위치 권한을 이미 허락한 사람은 페이지가 열릴 때 미리 위치를 받아둬요(첫 탭도 바로 이동). 허락 전이면 묻지 않아요
-function warmLoc(){ try{ if(!navigator.geolocation||!navigator.permissions) return; navigator.permissions.query({name:'geolocation'}).then(s=>{ if(s.state==='granted') navigator.geolocation.getCurrentPosition(p=>{ lastPos=p; },()=>{},{enableHighAccuracy:false,maximumAge:600000,timeout:20000}); }).catch(()=>{}); }catch(_){} }
+function warmLoc(){ try{ if(!navigator.geolocation||!navigator.permissions) return; navigator.permissions.query({name:'geolocation'}).then(s=>{ if(s.state==='granted') navigator.geolocation.getCurrentPosition(p=>{ lastPos=p; startAtMe(); },()=>{},{enableHighAccuracy:false,maximumAge:600000,timeout:20000}); }).catch(()=>{}); }catch(_){} }
+// 첫 화면: 위치를 모르면 대전시청, 알면 내 위치. 화면에서 '보이는 부분'(위 필터와 아래 목록 사이)의 가운데에 오게
+const START={city:{y:36.3504,x:127.3845,level:7}, me:6}; let userTouched=false;
+function centerOn(ll,level,animate){ if(level&&map.getLevel()!==level) map.setLevel(level); map.setCenter(ll);
+  const mw=document.querySelector('.mapwrap').getBoundingClientRect(), top=document.querySelector('.bar').getBoundingClientRect().bottom-mw.top;
+  let bot=mw.height; if(innerWidth<=820) bot=Math.min(bot, panelEl().getBoundingClientRect().top-mw.top);
+  const dy=mw.height/2-(top+bot)/2; if(Math.abs(dy)<2) return;
+  const pj=map.getProjection(), c=pj.containerPointFromCoords(ll), t=pj.coordsFromContainerPoint(new kakao.maps.Point(c.x,c.y+dy));
+  if(animate) map.panTo(t); else map.setCenter(t); }
+function startAtMe(){ if(!map||userTouched||!lastPos) return; userTouched=true; showMe(lastPos,false); centerOn(new kakao.maps.LatLng(lastPos.coords.latitude,lastPos.coords.longitude), START.me); }
 warmLoc();
 function showMe(pos,move){ const ll=new kakao.maps.LatLng(pos.coords.latitude,pos.coords.longitude), r=Math.max(25,Math.min(300,pos.coords.accuracy||30));
   if(myCircle){ myCircle.setPosition(ll); myCircle.setRadius(r); } else { myCircle=new kakao.maps.Circle({center:ll,radius:r,strokeWeight:2,strokeColor:'#2f6fed',strokeOpacity:.9,fillColor:'#2f6fed',fillOpacity:.25}); myCircle.setMap(map); }
-  document.getElementById('loc').classList.add('on'); if(move){ if(map.getLevel()>5) map.setLevel(5); map.panTo(ll); } }
+  document.getElementById('loc').classList.add('on'); if(move){ userTouched=true; centerOn(ll, map.getLevel()>START.me?START.me:0, true); } }
 document.getElementById('loc').addEventListener('click',()=>{
   if(!navigator.geolocation||locBusy) return; const btn=document.getElementById('loc'); locBusy=true; btn.classList.add('busy'); let moved=false;
   const done=()=>{ locBusy=false; btn.classList.remove('busy'); };
@@ -394,13 +403,15 @@ document.getElementById('loc').addEventListener('click',()=>{
     {enableHighAccuracy:true, maximumAge:30000, timeout:15000});
 });
 kakao.maps.load(()=>{
-  map = new kakao.maps.Map(document.getElementById('map'), {center:new kakao.maps.LatLng(36.3504,127.3845), level:8});
+  map = new kakao.maps.Map(document.getElementById('map'), {center:new kakao.maps.LatLng(START.city.y,START.city.x), level:START.city.level});
+  ['mousedown','touchstart','wheel'].forEach(ev=>document.getElementById('map').addEventListener(ev,()=>{ userTouched=true; },{passive:true}));
   const size=new kakao.maps.Size(28,28), opt={offset:new kakao.maps.Point(14,14)}, COL={ok:'#0f9d8a',check:'#d98a00',no:'#8a939e'};
   for(const c in COL){ imgs[c]=new kakao.maps.MarkerImage(dotSvg(COL[c]),size,opt); imgsBig[c]=new kakao.maps.MarkerImage(dotSvg(COL[c],true),size,opt); }
   markers = DATA.map((p,i)=>{ const m=new kakao.maps.Marker({position:new kakao.maps.LatLng(p.y,p.x), image:imgs[p.c], title:p.n, zIndex:p.c==='no'?1:3}); kakao.maps.event.addListener(m,'click',()=>openCard(i,false)); return m; });
   kakao.maps.event.addListener(map,'click',()=>{ closeCard(); closeInfo(); });
   kakao.maps.event.addListener(map,'dragstart',()=>{ closeCard(); closeInfo(); });
   kakao.maps.event.addListener(map,'idle',layoutLabels);
+  if(lastPos) startAtMe(); else centerOn(new kakao.maps.LatLng(START.city.y,START.city.x), START.city.level);
   render();
   loadReports(); loadPrices();
 });
