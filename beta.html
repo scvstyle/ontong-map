@@ -382,12 +382,12 @@ let locBusy=false, lastPos=null;
 function warmLoc(){ try{ if(!navigator.geolocation||!navigator.permissions) return; navigator.permissions.query({name:'geolocation'}).then(s=>{ if(s.state==='granted') navigator.geolocation.getCurrentPosition(p=>{ lastPos=p; startAtMe(); },()=>{},{enableHighAccuracy:false,maximumAge:600000,timeout:20000}); }).catch(()=>{}); }catch(_){} }
 // 첫 화면: 위치를 모르면 대전시청, 알면 내 위치. 화면에서 '보이는 부분'(위 필터와 아래 목록 사이)의 가운데에 오게
 const START={city:{y:36.3504,x:127.3845,level:7}, me:6}; let userTouched=false;
-function centerOn(ll,level,animate){ if(level&&map.getLevel()!==level) map.setLevel(level); map.setCenter(ll);
+function centerOn(ll,level,animate){ const zoom=!!level&&map.getLevel()!==level; if(zoom) map.setLevel(level);
   const mw=document.querySelector('.mapwrap').getBoundingClientRect(), top=document.querySelector('.bar').getBoundingClientRect().bottom-mw.top;
   let bot=mw.height; if(innerWidth<=820) bot=Math.min(bot, panelEl().getBoundingClientRect().top-mw.top);
-  const dy=mw.height/2-(top+bot)/2; if(Math.abs(dy)<2) return;
-  const pj=map.getProjection(), c=pj.containerPointFromCoords(ll), t=pj.coordsFromContainerPoint(new kakao.maps.Point(c.x,c.y+dy));
-  if(animate) map.panTo(t); else map.setCenter(t); }
+  const dy=mw.height/2-(top+bot)/2, pj=map.getProjection(), c=pj.containerPointFromCoords(ll);
+  const t=Math.abs(dy)<2?ll:pj.coordsFromContainerPoint(new kakao.maps.Point(c.x,c.y+dy));  // 최종 중심을 먼저 계산해서 한 번에 이동
+  if(animate&&!zoom) map.panTo(t); else map.setCenter(t); }
 function startAtMe(){ if(!map||userTouched||!lastPos) return; userTouched=true; showMe(lastPos,false); centerOn(new kakao.maps.LatLng(lastPos.coords.latitude,lastPos.coords.longitude), START.me); }
 warmLoc();
 function showMe(pos,move){ const ll=new kakao.maps.LatLng(pos.coords.latitude,pos.coords.longitude), r=Math.max(25,Math.min(300,pos.coords.accuracy||30));
