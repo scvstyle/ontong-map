@@ -68,12 +68,13 @@
   .ctrl button:active{background:#f2f6f5}
   .ctrl button.on svg{color:#2f6fed}
   .notice{position:absolute;left:12px;bottom:24px;z-index:3;background:rgba(255,255,255,.95);border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:12px;color:var(--sub);max-width:min(420px,70%);box-shadow:0 2px 8px rgba(0,0,0,.08)}
-  .card{position:relative;background:#fff;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.18);padding:14px 16px 12px;width:300px;font-size:13px;line-height:1.45;transform:translateY(-17px)}
+  .card{position:relative;white-space:normal;background:#fff;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.18);padding:14px 16px 12px;width:300px;font-size:13px;line-height:1.45;transform:translateY(-17px)}
   .card:after{content:"";position:absolute;left:50%;bottom:-8px;margin-left:-8px;border:8px solid transparent;border-top-color:#fff;border-bottom:0}
   .card h3{margin:2px 22px 4px 0;font-size:15.5px}
   .card .x{position:absolute;right:10px;top:8px;border:0;background:none;font-size:18px;color:#999;cursor:pointer}
   .card .row{color:var(--sub);margin:2px 0}
-  .card .why{background:var(--chk-soft);color:#8a5a00;border-radius:8px;padding:6px 8px;margin:8px 0 4px;font-size:12.5px}
+  .card .why{background:var(--chk-soft);color:#8a5a00;border-radius:8px;padding:6px 8px;margin:8px 0 4px;font-size:12.5px;word-break:keep-all;overflow-wrap:anywhere}
+  .card .why details{margin:3px 0 0;color:#8a5a00;font-size:11.5px} .card .why summary{cursor:pointer;opacity:.8}
   .card details{margin-top:6px;color:var(--sub);font-size:12px}
   .card .links{display:flex;gap:8px;margin-top:10px}
   .card .links a{flex:1;text-align:center;text-decoration:none;font-weight:600;font-size:13px;border-radius:9px;padding:8px 0;border:1px solid var(--line);color:var(--ink)}
@@ -215,8 +216,8 @@ function card(p,i){
     ${p.b?`<div class="row">${esc(p.b)}${p.t==='충전소'?' · 충전소':''}</div>`:''}
     ${priceBlock(p)}
     ${p.rep?`<div class="why">${esc(p.rep)}</div>`:''}
-    ${p.r?`<div class="why">${esc(p.r)}</div>`:''}
-    <details><summary>앱에 등록된 이름 (${p.rec.length})</summary>${recs}</details>
+    ${p.r?`<div class="why">${esc(whyShort(p.r))}${whyShort(p.r)!==p.r?`<details><summary>자세히</summary>${esc(p.r)}</details>`:''}</div>`:''}
+    <details><summary>온통대전에 등록된 이름 (${p.rec.length})</summary>${recs}</details>
     <div class="links"><a href="${kakaoLink}" target="_blank" rel="noopener">카카오맵</a><a class="primary" href="${navLink}" target="_blank" rel="noopener">길찾기</a></div>
     ${FORM?`<div class="vote"><div class="q">${base(p)==='no'?'캐시백이 됐나요?':'정보가 틀렸나요?'}</div><div class="vb">${base(p)==='no'?`<button onclick="vote(${i},POS)">캐시백 됐어요</button>`:`<button onclick="vote(${i},'캐시백 안 됐어요')">캐시백 안 됐어요</button>`}<button onclick="vote(${i},'문을 닫았어요')">문을 닫았어요</button></div>${OPS?`<button class="ops" onclick="vote(${i},OPS_VAL,true)">운영자: 앱 표시대로</button>`:''}<div class="msg" id="votemsg"></div></div>`:''}
   </div>`;
@@ -235,8 +236,17 @@ function closeInfo(){ const inf=document.getElementById('info'); if(!inf.hidden)
 // 지금 보이는 지도 범위에서 싼 순으로 X곳에 가격 말풍선(같은 가격은 같은 메달, 겹치면 싼 곳 우선)
 const LBL=[]; let ctx2d=null;
 function textW(s){ if(!ctx2d){ ctx2d=document.createElement('canvas').getContext('2d'); } ctx2d.font='700 12.5px Pretendard, sans-serif'; return ctx2d.measureText(s).width; }
+// '확인 필요' 사유를 이용자 말로 짧게(원문은 '자세히'에)
+function whyShort(r){
+  if(r.startsWith('같은 주소에 캐시백 제공/미제공')) return "온통대전 앱에 이곳이 '제공'과 '미제공'으로 함께 올라와 있어요.";
+  if(r.includes("다른 주소로 '미제공'")) return "온통대전 앱에 같은 곳이 '미제공'으로도 올라와 있어요.";
+  if(r.startsWith('카카오맵에서 영업 중인 곳을 찾지 못함')) return '카카오맵에 없는 곳이에요. 문을 닫았거나 옮겼을 수 있어요.';
+  if(r.startsWith('카카오맵상 차량 주유소가 아닌')) return '차량 주유소가 아닌 석유 판매점일 수 있어요.';
+  if(r.startsWith('앱 주소(')) return '온통대전 앱의 주소와 실제 주소가 달라요.';
+  return r; }
+let dragging=false;
 function layoutLabels(){
-  if(!map||!map.getProjection) return;
+  if(!map||!map.getProjection||dragging) return; // 말풍선을 끄는 중엔 다시 배치하지 않아요(끄던 말풍선이 사라지며 멈추지 않게)
   const proj=map.getProjection(), mw=document.querySelector('.mapwrap').getBoundingClientRect();
   const top=0; let bot=mw.height; if(innerWidth<=820) bot=Math.min(bot, panelEl().getBoundingClientRect().top-mw.top);
   // 지도 위에 떠 있는 제목·유종·상태·버튼 자리는 피해서 놓아요
@@ -312,9 +322,9 @@ function shiftMap(dx,dy){ const pj=map.getProjection(), c=pj.containerPointFromC
 function dragPan(el){ let st=null, moved=false;
   el.addEventListener('pointerdown',e=>{ if(e.button>0) return; st={x:e.clientX,y:e.clientY,lx:e.clientX,ly:e.clientY,id:e.pointerId}; moved=false; });
   el.addEventListener('pointermove',e=>{ if(!st||e.pointerId!==st.id||!map) return;
-    if(!moved){ if(Math.hypot(e.clientX-st.x,e.clientY-st.y)<6) return; moved=true; closeCard(); closeInfo(); try{el.setPointerCapture(e.pointerId);}catch(_){} }
+    if(!moved){ if(Math.hypot(e.clientX-st.x,e.clientY-st.y)<6) return; moved=true; closeCard(); closeInfo(); dragging=true; try{el.setPointerCapture(e.pointerId);}catch(_){} }
     shiftMap(e.clientX-st.lx, e.clientY-st.ly); st.lx=e.clientX; st.ly=e.clientY; });
-  const end=()=>{ st=null; }; el.addEventListener('pointerup',end); el.addEventListener('pointercancel',end);
+  const end=()=>{ st=null; if(dragging){ dragging=false; layoutLabels(); } }; el.addEventListener('pointerup',end); el.addEventListener('pointercancel',end);
   el.addEventListener("click",e=>{ if(moved){ e.stopImmediatePropagation(); e.preventDefault(); moved=false; } },true); }
 document.querySelectorAll('.pill,.bar,.status,.ctrls').forEach(dragPan);
 document.getElementById('infoBtn').addEventListener('click',e=>{ e.stopPropagation(); const inf=document.getElementById('info'); inf.hidden=!inf.hidden; if(!inf.hidden) inf.innerHTML=infoHtml(); setTimeout(layoutLabels,0); });
