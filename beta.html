@@ -194,10 +194,15 @@ function applyReport(p,result,ts){
   if(say){ p.c='check'; p.rep=`이용자 제보: ${say} 제보가 있어요${ts?' ('+ts+')':''}`; }
   else { p.c=p.c0; p.r=p.r0; delete p.rep; }
 }
+// 구글 '웹에 게시' CSV는 가끔 옛 버전(줄이 더 적은)을 돌려줘요. 시트는 줄이 늘기만 하니, 전에 받은 것보다 적으면 전 것을 써요(30분 지나면 새것 인정)
+async function fetchStable(url,key){ const t=await fetch(url+'&t='+Date.now()).then(r=>{ if(!r.ok) throw new Error('csv'); return r.text(); });
+  const rows=parseCSV(t); let c=null; try{ c=JSON.parse(localStorage.getItem('csv:'+key)||'null'); }catch(_){}
+  if(c&&c.rows&&c.rows.length>rows.length&&Date.now()-c.at<1800000) return c.rows;
+  try{ localStorage.setItem('csv:'+key, JSON.stringify({at:Date.now(),rows})); }catch(_){} return rows; }
 function loadReports(){
   if(!FORM||!FORM.reports) return;
-  fetch(FORM.reports+'&t='+Math.floor(Date.now()/60000)).then(r=>r.ok?r.text():'').then(t=>{
-    const rows=parseCSV(t).slice(1); const last={};
+  fetchStable(FORM.reports,'rep').then(all=>{
+    const rows=all.slice(1); const last={};
     for(const r of rows){ if(r.length<4) continue; last[r[3].trim()]={res:r[1].trim(),ts:shortDate(r[0])}; }
     let changed=false;
     DATA.forEach(p=>{ const L=last[p.a]; if(L){ applyReport(p,L.res,L.ts); changed=true; } });
@@ -422,8 +427,8 @@ function dlg(msg,okText,cancelText){ return new Promise(res=>{ const d=document.
 
 // --- 공지사항 ---
 let NOTICES=[];
-async function loadNotices(){ if(!FORM||!FORM.notice) return; try{ const t=await fetch(FORM.notice+'&t='+Math.floor(Date.now()/60000)).then(r=>r.text());
-  NOTICES=parseCSV(t).slice(1).map((r,i)=>({d:r[0]||'',t:parseKT(r[0]),title:(r[1]||'').trim(),body:r[2]||'',i})).filter(n=>n.title).sort((a,b)=>b.t-a.t||b.i-a.i); }catch(_){} markNoticeDot(); }
+async function loadNotices(){ if(!FORM||!FORM.notice) return; try{
+  NOTICES=(await fetchStable(FORM.notice,'notice')).slice(1).map((r,i)=>({d:r[0]||'',t:parseKT(r[0]),title:(r[1]||'').trim(),body:r[2]||'',i})).filter(n=>n.title).sort((a,b)=>b.t-a.t||b.i-a.i); }catch(_){} markNoticeDot(); }
 const noticeKey=n=>n?(n.d+'|'+n.title):'';
 function markNoticeDot(){ const unseen=NOTICES.length&&LS.get('seenNotice','')!==noticeKey(NOTICES[0]); const b=document.getElementById('infoBtn'); let d=b.querySelector('.ndot'); if(unseen&&!d){ d=document.createElement('span'); d.className='ndot'; b.appendChild(d);} if(!unseen&&d) d.remove(); return unseen; }
 function noticeHtml(){ if(!NOTICES.length) return '<div class="empty">아직 공지가 없어요.</div>'; const seen=LS.get('seenNotice','');
@@ -433,8 +438,7 @@ function noticeHtml(){ if(!NOTICES.length) return '<div class="empty">아직 공
 // --- 자유게시판 ---
 let BRD={rows:[],at:0,err:false}, bv={post:null,replyTo:null};
 async function loadBoard(force){ if(!FORM||!FORM.board) return; if(!force&&Date.now()-BRD.at<20000) return;
-  try{ const t=await fetch(FORM.board+'&t='+Date.now()).then(r=>{ if(!r.ok) throw 0; return r.text(); });
-    BRD.rows=parseCSV(t).slice(1).filter(r=>r[1]).map(r=>({t:parseKT(r[0]),type:r[1],nick:r[2]||'',meta:r[3]||'',text:r[4]||''})); BRD.at=Date.now(); BRD.err=false; }
+  try{ BRD.rows=(await fetchStable(FORM.board,'board')).slice(1).filter(r=>r[1]).map(r=>({t:parseKT(r[0]),type:r[1],nick:r[2]||'',meta:r[3]||'',text:r[4]||''})); BRD.at=Date.now(); BRD.err=false; }
   catch(_){ BRD.err=true; } }
 async function boardModel(){
   const have=new Set(BRD.rows.map(r=>r.type+'|'+r.meta)), now=Date.now();
