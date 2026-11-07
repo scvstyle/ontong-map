@@ -12,7 +12,7 @@
     --ok:#0f9d8a; --ok-soft:#e3f5f2; --chk:#d98a00; --chk-soft:#fdf2dc; --no:#8a939e; --no-soft:#eef0f2; --accent:#0f9d8a;
   }
   *{box-sizing:border-box}
-  html,body{margin:0;height:100%;overflow:hidden;font-family:Pretendard,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--ink);background:var(--bg)}
+  html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;font-family:Pretendard,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--ink);background:var(--bg)}
   .app{display:grid;grid-template-rows:1fr;height:100%;height:100dvh}
   /* 지도 위에 띄운 제목·필터 */
   .top{position:absolute;left:10px;top:10px;z-index:5;display:flex;flex-direction:column;align-items:flex-start;gap:8px;pointer-events:none;max-width:calc(100% - 20px)}
@@ -56,7 +56,9 @@
   .item .badge{grid-row:span 2;align-self:start;margin-top:2px;font-size:11px;font-weight:700;border-radius:6px;padding:3px 6px;white-space:nowrap}
   .b-ok{background:var(--ok-soft);color:var(--ok)} .b-chk{background:var(--chk-soft);color:var(--chk)} .b-no{background:var(--no-soft);color:#5b6470}
   .item .nm{font-size:14.5px;font-weight:600}
-  .item .ad{font-size:12.5px;color:var(--sub)}
+  .item .nm{grid-column:2} .item .ad{font-size:12.5px;color:var(--sub);grid-column:2}
+  .item .pr.none{font-size:12px;color:var(--sub)}
+  .pill,.bar,.status,.ctrls,.lbw{touch-action:none} .phead{touch-action:none}
   #map{width:100%;height:100%;min-height:0}
   .mapwrap{position:relative;min-height:0}
   .ctrls{position:absolute;right:10px;bottom:24px;z-index:3;display:flex;flex-direction:column;gap:8px}
@@ -103,9 +105,11 @@
 <div class="app">
   <div class="main">
     <aside id="panel">
-      <div class="grip" id="grip" aria-label="목록 접기·펴기" role="button"><span></span></div>
-      <div class="search"><input id="q" type="search" placeholder="이름·동네 검색"></div>
-      <div class="count" id="count"></div>
+      <div class="phead" id="phead">
+        <div class="grip" id="grip" aria-label="목록 접기·펴기" role="button"><span></span></div>
+        <div class="search"><input id="q" type="search" placeholder="이름·동네 검색"></div>
+        <div class="count" id="count"></div>
+      </div>
       <div class="list" id="list"></div>
     </aside>
     <div class="mapwrap">
@@ -258,7 +262,7 @@ function layoutLabels(){
   LBL.forEach((o,i)=>{ if(o&&o.__on&&!on.has(i)){ o.setMap(null); o.__on=false; } });
   for(const p of placed){ let o=LBL[p.i];
     if(!o){ const el=document.createElement('div'); el.className='lbw'; el.addEventListener('click',e=>{e.stopPropagation(); openCard(p.i,false);});
-      o=LBL[p.i]=new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(DATA[p.i].y,DATA[p.i].x), content:el, xAnchor:0, yAnchor:0, zIndex:5, clickable:true}); o.__el=el; }
+      dragPan(el); o=LBL[p.i]=new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(DATA[p.i].y,DATA[p.i].x), content:el, xAnchor:0, yAnchor:0, zIndex:5, clickable:true}); o.__el=el; }
     o.__el.innerHTML=`<div class="lb lb-${p.pos} c-${DATA[p.i].c}">${p.medal?`<i class="m m${p.medal}">${p.medal}</i>`:''}${p.txt}</div>`;
     if(!o.__on){ o.setMap(map); o.__on=true; } }
 }
@@ -287,9 +291,9 @@ function render(){
   const pr=DATA.map(p=>priceOf(p));
   const order=DATA.map((p,i)=>i).filter(i=>visible(DATA[i])).sort((a,b)=>((pr[a]?pr[a].v:1e9)-(pr[b]?pr[b].v:1e9)) || (RANK[DATA[a].c]-RANK[DATA[b].c]) || DATA[a].g.localeCompare(DATA[b].g) || DATA[a].n.localeCompare(DATA[b].n));
   for(const i of order){ const p=DATA[i]; n++;
-    html+=`<div class="item" data-i="${i}"><span class="badge ${BADGE[p.c]}">${SHORT[p.c]}</span><div class="nm">${esc(p.n)}</div><div class="ad">${esc(p.g)} · ${esc(p.a.replace(/^대전(광역시)?\s*\S+구\s*/,''))}</div>${pr[i]?`<div class="pr"><b>${won(pr[i].v)}</b><small>원</small></div>`:''}</div>`; }
+    html+=`<div class="item" data-i="${i}"><span class="badge ${BADGE[p.c]}">${SHORT[p.c]}</span><div class="nm">${esc(p.n)}</div><div class="ad">${esc(p.g)} · ${esc(p.a.replace(/^대전(광역시)?\s*\S+구\s*/,''))}</div>${pr[i]?`<div class="pr"><b>${won(pr[i].v)}</b><small>원</small></div>`:'<div class="pr none">가격 정보 없음</div>'}</div>`; }
   list.innerHTML = html || '<div class="count" style="padding:16px">조건에 맞는 곳이 없어요.</div>';
-  document.getElementById('count').innerHTML = `${n}곳${PU?` · 가격 ${esc(when(PU))}`:''}` + (FORM?` · <a href="${reportUrl()}" target="_blank" rel="noopener" style="color:var(--ok);font-weight:600;text-decoration:none">제보하기</a>`:'');
+  document.getElementById('count').innerHTML = `${n}곳${PU?` · 가격 ${esc(when(PU))}`:''}`;
   markers.forEach((m,i)=>m.setMap(visible(DATA[i])?map:null));
   const inf=document.getElementById('info'); if(!inf.hidden) inf.innerHTML=infoHtml();
   layoutLabels();
@@ -298,11 +302,21 @@ document.getElementById('list').addEventListener('click',e=>{const it=e.target.c
 document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{const f=c.dataset.f; state[f]=!state[f]; c.classList.toggle('on',state[f]); closeCard(); render();}));
 document.querySelectorAll('#fuel button').forEach(b=>b.addEventListener('click',()=>{ state.fuel=b.dataset.p; document.querySelectorAll('#fuel button').forEach(x=>x.classList.toggle('on',x===b)); closeCard(); render(); }));
 document.getElementById('q').addEventListener('input',e=>{state.q=e.target.value.trim().toLowerCase(); render();});
-// 손잡이: 탭하면 접기·펴기, 위로 쓸면 펴기, 아래로 쓸면 접기
-{ const g=document.getElementById('grip'); let y0=null, swiped=false;
+// 패널 머리(손잡이·검색창·개수): 손잡이를 탭하면 접기·펴기, 머리 어디서든 위로 쓸면 펴기·아래로 쓸면 접기
+{ const h=document.getElementById('phead'), g=document.getElementById('grip'); let y0=null, swiped=false;
   g.addEventListener('click',()=>{ if(swiped){swiped=false;return;} preCardMin=null; setPanel(!panelEl().classList.contains('min')); });
-  g.addEventListener('touchstart',e=>{ y0=e.touches[0].clientY; swiped=false; },{passive:true});
-  g.addEventListener('touchend',e=>{ if(y0===null) return; const dy=e.changedTouches[0].clientY-y0; y0=null; if(Math.abs(dy)>25){ swiped=true; preCardMin=null; setPanel(dy>0); } },{passive:true}); }
+  h.addEventListener('touchstart',e=>{ y0=e.touches[0].clientY; swiped=false; },{passive:true});
+  h.addEventListener('touchend',e=>{ if(y0===null) return; const dy=e.changedTouches[0].clientY-y0; y0=null; if(Math.abs(dy)>25){ swiped=true; preCardMin=null; setPanel(dy>0); if(dy>0) document.getElementById('q').blur(); } },{passive:true}); }
+// 지도 위에 떠 있는 제목·필터·버튼·말풍선을 끌어도 지도가 움직이게
+function shiftMap(dx,dy){ const pj=map.getProjection(), c=pj.containerPointFromCoords(map.getCenter()); map.setCenter(pj.coordsFromContainerPoint(new kakao.maps.Point(c.x-dx,c.y-dy))); }
+function dragPan(el){ let st=null, moved=false;
+  el.addEventListener('pointerdown',e=>{ if(e.button>0) return; st={x:e.clientX,y:e.clientY,lx:e.clientX,ly:e.clientY,id:e.pointerId}; moved=false; });
+  el.addEventListener('pointermove',e=>{ if(!st||e.pointerId!==st.id||!map) return;
+    if(!moved){ if(Math.hypot(e.clientX-st.x,e.clientY-st.y)<6) return; moved=true; closeCard(); closeInfo(); try{el.setPointerCapture(e.pointerId);}catch(_){} }
+    shiftMap(e.clientX-st.lx, e.clientY-st.ly); st.lx=e.clientX; st.ly=e.clientY; });
+  const end=()=>{ st=null; }; el.addEventListener('pointerup',end); el.addEventListener('pointercancel',end);
+  el.addEventListener("click",e=>{ if(moved){ e.stopImmediatePropagation(); e.preventDefault(); moved=false; } },true); }
+document.querySelectorAll('.pill,.bar,.status,.ctrls').forEach(dragPan);
 document.getElementById('infoBtn').addEventListener('click',e=>{ e.stopPropagation(); const inf=document.getElementById('info'); inf.hidden=!inf.hidden; if(!inf.hidden) inf.innerHTML=infoHtml(); setTimeout(layoutLabels,0); });
 document.addEventListener('click',e=>{ if(!e.target.closest('#info,#infoBtn')) closeInfo(); });
 addEventListener('resize',()=>setTimeout(layoutLabels,100));
