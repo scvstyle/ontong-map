@@ -99,6 +99,8 @@
   .ctrl button+button{border-top:1px solid var(--line)}
   .ctrl button:active{background:#f2f6f5}
   .ctrl button.on svg{color:#2f6fed}
+  .me{width:14px;height:14px;border-radius:50%;background:#2f6fed;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);position:relative}
+  .me::after{content:'';position:absolute;inset:-9px;border-radius:50%;background:rgba(47,111,237,.18);animation:mepulse 2s ease-out infinite} @keyframes mepulse{0%{transform:scale(.6);opacity:1}100%{transform:scale(1.6);opacity:0}}
   .ctrl button.busy svg{color:#2f6fed;animation:locpulse 1s ease-in-out infinite} @keyframes locpulse{50%{opacity:.25}}
   .notice{position:absolute;left:12px;bottom:24px;z-index:3;background:rgba(255,255,255,.95);border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:12px;color:var(--sub);max-width:min(420px,70%);box-shadow:0 2px 8px rgba(0,0,0,.08)}
   .card{position:relative;white-space:normal;background:#fff;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.18);padding:14px 16px 12px;width:300px;font-size:13px;line-height:1.45;transform:translateY(-17px)}
@@ -390,8 +392,9 @@ function centerOn(ll,level,animate){ const zoom=!!level&&map.getLevel()!==level;
   if(animate&&!zoom) map.panTo(t); else map.setCenter(t); }
 function startAtMe(){ if(!map||userTouched||!lastPos) return; userTouched=true; showMe(lastPos,false); centerOn(new kakao.maps.LatLng(lastPos.coords.latitude,lastPos.coords.longitude), START.me); }
 warmLoc();
-function showMe(pos,move){ const ll=new kakao.maps.LatLng(pos.coords.latitude,pos.coords.longitude), r=Math.max(25,Math.min(300,pos.coords.accuracy||30));
-  if(myCircle){ myCircle.setPosition(ll); myCircle.setRadius(r); } else { myCircle=new kakao.maps.Circle({center:ll,radius:r,strokeWeight:2,strokeColor:'#2f6fed',strokeOpacity:.9,fillColor:'#2f6fed',fillOpacity:.25}); myCircle.setMap(map); }
+// 내 위치는 크기가 일정한 파란 점으로(PC는 와이파이로 위치를 잡아 오차가 수백 m라, 오차만큼 원을 그리면 너무 커져요)
+function showMe(pos,move){ const ll=new kakao.maps.LatLng(pos.coords.latitude,pos.coords.longitude);
+  if(myCircle) myCircle.setPosition(ll); else { const el=document.createElement('div'); el.className='me'; myCircle=new kakao.maps.CustomOverlay({position:ll, content:el, xAnchor:.5, yAnchor:.5, zIndex:4}); myCircle.setMap(map); }
   document.getElementById('loc').classList.add('on'); if(move){ userTouched=true; centerOn(ll, map.getLevel()>START.me?START.me:0, true); } }
 document.getElementById('loc').addEventListener('click',()=>{
   if(!navigator.geolocation||locBusy) return; const btn=document.getElementById('loc'); locBusy=true; btn.classList.add('busy'); let moved=false;
