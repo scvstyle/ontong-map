@@ -377,15 +377,19 @@ document.getElementById('zin').addEventListener('click',()=>{ if(map) map.setLev
 document.getElementById('zout').addEventListener('click',()=>{ if(map) map.setLevel(Math.min(14,map.getLevel()+1),{animate:true}); });
 let myCircle=null;
 // 내 위치: ① 빠른 위치(와이파이·기지국·최근 위치)로 바로 이동 → ② GPS 정밀 위치가 오면 점만 조용히 보정
-let locBusy=false;
+let locBusy=false, lastPos=null;
+// 위치 권한을 이미 허락한 사람은 페이지가 열릴 때 미리 위치를 받아둬요(첫 탭도 바로 이동). 허락 전이면 묻지 않아요
+function warmLoc(){ try{ if(!navigator.geolocation||!navigator.permissions) return; navigator.permissions.query({name:'geolocation'}).then(s=>{ if(s.state==='granted') navigator.geolocation.getCurrentPosition(p=>{ lastPos=p; },()=>{},{enableHighAccuracy:false,maximumAge:600000,timeout:20000}); }).catch(()=>{}); }catch(_){} }
+warmLoc();
 function showMe(pos,move){ const ll=new kakao.maps.LatLng(pos.coords.latitude,pos.coords.longitude), r=Math.max(25,Math.min(300,pos.coords.accuracy||30));
   if(myCircle){ myCircle.setPosition(ll); myCircle.setRadius(r); } else { myCircle=new kakao.maps.Circle({center:ll,radius:r,strokeWeight:2,strokeColor:'#2f6fed',strokeOpacity:.9,fillColor:'#2f6fed',fillOpacity:.25}); myCircle.setMap(map); }
   document.getElementById('loc').classList.add('on'); if(move){ if(map.getLevel()>5) map.setLevel(5); map.panTo(ll); } }
 document.getElementById('loc').addEventListener('click',()=>{
   if(!navigator.geolocation||locBusy) return; const btn=document.getElementById('loc'); locBusy=true; btn.classList.add('busy'); let moved=false;
   const done=()=>{ locBusy=false; btn.classList.remove('busy'); };
-  navigator.geolocation.getCurrentPosition(p=>{ moved=true; showMe(p,true); }, ()=>{}, {enableHighAccuracy:false, maximumAge:300000, timeout:4000});
-  navigator.geolocation.getCurrentPosition(p=>{ showMe(p,!moved); moved=true; done(); },
+  if(lastPos&&Date.now()-lastPos.timestamp<600000){ moved=true; showMe(lastPos,true); }
+  if(!moved) navigator.geolocation.getCurrentPosition(p=>{ lastPos=p; if(!moved){ moved=true; showMe(p,true); } }, ()=>{}, {enableHighAccuracy:false, maximumAge:600000, timeout:5000});
+  navigator.geolocation.getCurrentPosition(p=>{ lastPos=p; showMe(p,!moved); moved=true; done(); },
     err=>{ done(); if(!moved) toast(err&&err.code===1?'위치 권한이 꺼져 있어요. 브라우저 설정에서 허용해 주세요.':'지금은 위치를 찾지 못했어요. 잠시 뒤 다시 눌러 주세요.'); },
     {enableHighAccuracy:true, maximumAge:30000, timeout:15000});
 });
