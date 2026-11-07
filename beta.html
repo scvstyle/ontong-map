@@ -15,17 +15,18 @@
   html,body{margin:0;height:100%;overflow:hidden;font-family:Pretendard,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--ink);background:var(--bg)}
   .app{display:grid;grid-template-rows:1fr;height:100%;height:100dvh}
   /* 지도 위에 띄운 제목·필터 */
-  .top{position:absolute;left:10px;right:64px;top:10px;z-index:4;display:flex;flex-wrap:wrap;gap:8px;align-items:center;pointer-events:none}
+  .top{position:absolute;left:10px;top:10px;z-index:5;display:flex;flex-direction:column;align-items:flex-start;gap:8px;pointer-events:none;max-width:calc(100% - 20px)}
+  .status{position:absolute;right:10px;top:10px;z-index:4;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
   .top>*{pointer-events:auto}
   .pill{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.9);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:1px solid rgba(0,0,0,.06);border-radius:999px;padding:6px 6px 6px 15px;box-shadow:0 2px 10px rgba(0,0,0,.14)}
   .pill h1{font-size:15.5px;margin:0;font-weight:700;letter-spacing:-.2px;white-space:nowrap}
   .pill .i{width:24px;height:24px;border-radius:50%;border:0;background:#eef0f2;color:var(--sub);font:700 13px/24px Pretendard,sans-serif;cursor:pointer;padding:0}
-  .bar{display:flex;gap:6px;min-width:0;max-width:100%;overflow-x:auto;scrollbar-width:none;padding:2px}
+  .bar{display:flex;gap:6px;padding:2px}
   .bar::-webkit-scrollbar{display:none}
   .bar .seg{margin:0;border-radius:999px;box-shadow:0 1px 6px rgba(0,0,0,.14);border-color:rgba(0,0,0,.06)}
   .bar .seg button{padding:6px 11px;font-size:13px}
   .chips{display:flex;gap:6px}
-  .info{flex-basis:100%;max-width:340px;background:#fff;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.16);padding:10px 12px;font-size:12.5px;color:var(--sub);line-height:1.5}
+  .info{max-width:min(340px,calc(100vw - 20px));background:#fff;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.16);padding:10px 12px;font-size:12.5px;color:var(--sub);line-height:1.5}
   .info b{color:var(--ink)} .info a{color:var(--ok);font-weight:600}
   /* 가격 말풍선 */
   .lbw{position:relative;width:0;height:0}
@@ -58,7 +59,7 @@
   .item .ad{font-size:12.5px;color:var(--sub)}
   #map{width:100%;height:100%;min-height:0}
   .mapwrap{position:relative;min-height:0}
-  .ctrls{position:absolute;right:10px;top:10px;z-index:3;display:flex;flex-direction:column;gap:8px}
+  .ctrls{position:absolute;right:10px;bottom:24px;z-index:3;display:flex;flex-direction:column;gap:8px}
   .ctrl{display:flex;flex-direction:column;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.12);overflow:hidden}
   .ctrl button{width:40px;height:40px;border:0;background:#fff;font-size:22px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink);padding:0;font-family:inherit}
   .ctrl button+button{border-top:1px solid var(--line)}
@@ -85,23 +86,24 @@
   .vote .msg{font-size:12px;color:var(--ok);font-weight:600;margin-top:4px;min-height:1em}
   .notice a{color:var(--ok);font-weight:600}
   .tabs{display:none}
+  .grip{display:none}
   @media (max-width:820px){
     .main{grid-template-columns:1fr;grid-template-rows:1fr}
     aside{position:fixed;left:0;right:0;bottom:0;height:42%;z-index:6;border-right:0;border-top:1px solid var(--line);border-radius:16px 16px 0 0;box-shadow:0 -4px 16px rgba(0,0,0,.08);transition:height .2s}
     aside.min{height:96px}
-    .grip{display:block;width:40px;height:5px;border-radius:3px;background:#cfd4da;margin:8px auto 2px;cursor:pointer}
-    .top{right:10px} .bar{flex-basis:100%} .chip{font-size:12.5px;padding:6px 10px} .bar .seg button{padding:6px 10px}
-    .ctrls{top:100px}
+    .grip{display:flex;justify-content:center;align-items:center;height:24px;flex:none;cursor:pointer;touch-action:none} .grip span{width:44px;height:5px;border-radius:3px;background:#c4cad1}
+    .chip{font-size:12.5px;padding:6px 10px} .bar .seg button{padding:6px 10px}
+    /* 내 위치 버튼은 목록 패널 바로 위에 붙어 같이 오르내려요. 폰은 손가락 확대라 +/− 없음 */
+    .ctrls{position:fixed;bottom:calc(42% + 12px);transition:bottom .2s;z-index:5} body.min .ctrls{bottom:108px} .zoomctl{display:none}
     .card{width:270px}
   }
-  .grip{display:none}
 </style>
 </head>
 <body>
 <div class="app">
   <div class="main">
     <aside id="panel">
-      <span class="grip" id="grip"></span>
+      <div class="grip" id="grip" aria-label="목록 접기·펴기" role="button"><span></span></div>
       <div class="search"><input id="q" type="search" placeholder="이름·동네 검색"></div>
       <div class="count" id="count"></div>
       <div class="list" id="list"></div>
@@ -111,15 +113,18 @@
       <div class="top">
         <div class="pill"><h1>온통대전 캐시백 지도</h1><button class="i" id="infoBtn" aria-label="안내">i</button></div>
         <div class="bar">
+          <!-- 업종을 넓히면 여기 앞에 [업종 ▾] 선택이 들어가요 -->
           <div class="seg" id="fuel"><button data-p="B027" class="on">휘발유</button><button data-p="D047">경유</button><button data-p="K015">LPG</button></div>
-          <span class="chip on" data-f="ok"><span class="dot" style="background:var(--ok)"></span>캐시백 제공</span>
-          <span class="chip" data-f="no"><span class="dot" style="background:var(--no)"></span>미제공</span>
-          <span class="chip" data-f="check"><span class="dot" style="background:var(--chk)"></span>확인 필요</span>
         </div>
         <div class="info" id="info" hidden></div>
       </div>
+      <div class="status">
+        <span class="chip on" data-f="ok"><span class="dot" style="background:var(--ok)"></span>캐시백 제공</span>
+        <span class="chip" data-f="no"><span class="dot" style="background:var(--no)"></span>미제공</span>
+        <span class="chip" data-f="check"><span class="dot" style="background:var(--chk)"></span>확인 필요</span>
+      </div>
       <div class="ctrls">
-        <div class="ctrl"><button id="zin" aria-label="확대" title="확대">+</button><button id="zout" aria-label="축소" title="축소">−</button></div>
+        <div class="ctrl zoomctl"><button id="zin" aria-label="확대" title="확대">+</button><button id="zout" aria-label="축소" title="축소">−</button></div>
         <div class="ctrl"><button id="loc" aria-label="내 위치" title="내 위치"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/></svg></button></div>
       </div>
     </div>
@@ -216,29 +221,36 @@ function priceBlock(p){ const s=p.o&&PR[p.o]; if(!s) return p.o||!PU?'':'<div cl
   const ks=['B027','D047','K015'].filter(k=>s.p&&s.p[k]);
   const rows=ks.map(k=>`<div class="pl"><span>${FUEL[k]}</span><b>${won(s.p[k])}원</b></div>`).join('');
   return `<div class="price">${rows}<div class="src">오피넷 ${esc(when(PU))} 기준</div></div>`; }
-function closeCard(){ if(overlay){overlay.setMap(null);} document.querySelectorAll('.item.sel').forEach(e=>e.classList.remove('sel'));
+// 패널: 카드 열기 직전 상태를 기억했다가 카드가 닫히면 그대로 돌려놔요(카드가 열린 동안 사용자가 직접 바꾸면 그걸 존중)
+const panelEl=()=>document.getElementById('panel'); let preCardMin=null;
+function setPanel(min){ panelEl().classList.toggle('min',min); document.body.classList.toggle('min',min); setTimeout(layoutLabels,260); }
+function hideCard(){ if(overlay){overlay.setMap(null); overlay=null;} document.querySelectorAll('.item.sel').forEach(e=>e.classList.remove('sel'));
   if(selI>=0&&markers[selI]){ const j=selI; selI=-1; markers[j].setImage(imgFor(j)); markers[j].setZIndex(DATA[j].c==='no'?1:3); layoutLabels(); } selI=-1; }
+function closeCard(){ const had=!!overlay; hideCard(); if(had&&preCardMin!==null&&innerWidth<=820) setPanel(preCardMin); preCardMin=null; }
+function closeInfo(){ const inf=document.getElementById('info'); if(!inf.hidden){ inf.hidden=true; setTimeout(layoutLabels,0); } }
 // 지금 보이는 지도 범위에서 싼 순으로 X곳에 가격 말풍선(같은 가격은 같은 메달, 겹치면 싼 곳 우선)
 const LBL=[]; let ctx2d=null;
 function textW(s){ if(!ctx2d){ ctx2d=document.createElement('canvas').getContext('2d'); } ctx2d.font='700 12.5px Pretendard, sans-serif'; return ctx2d.measureText(s).width; }
 function layoutLabels(){
   if(!map||!map.getProjection) return;
   const proj=map.getProjection(), mw=document.querySelector('.mapwrap').getBoundingClientRect();
-  const top=document.querySelector('.top').getBoundingClientRect().bottom-mw.top+4;
-  let bot=mw.height; if(innerWidth<=820) bot=Math.min(bot, document.getElementById('panel').getBoundingClientRect().top-mw.top);
+  const top=0; let bot=mw.height; if(innerWidth<=820) bot=Math.min(bot, panelEl().getBoundingClientRect().top-mw.top);
+  // 지도 위에 떠 있는 제목·유종·상태·버튼 자리는 피해서 놓아요
+  const ui=[...document.querySelectorAll('.pill,.bar,.info:not([hidden]),.status,.ctrls')].map(e=>{const r=e.getBoundingClientRect(); return {x1:r.left-mw.left-4,y1:r.top-mw.top-4,x2:r.right-mw.left+4,y2:r.bottom-mw.top+4};}).filter(r=>r.x2>r.x1);
+  const hitUI=(b)=>ui.some(o=>b.x1<o.x2&&b.x2>o.x1&&b.y1<o.y2&&b.y2>o.y1);
   const cand=[];
-  DATA.forEach((p,i)=>{ if(i===selI||!visible(p)) return; const pr=priceOf(p); if(!pr) return;
+  DATA.forEach((p,i)=>{ if(!visible(p)) return; const pr=priceOf(p); if(!pr) return;
     const pt=proj.containerPointFromCoords(new kakao.maps.LatLng(p.y,p.x));
-    if(pt.x<0||pt.x>mw.width||pt.y<top||pt.y>bot) return; cand.push({i,v:pr.v,x:pt.x,y:pt.y}); });
+    if(pt.x<0||pt.x>mw.width||pt.y<top||pt.y>bot||hitUI({x1:pt.x,y1:pt.y,x2:pt.x,y2:pt.y})) return; cand.push({i,v:pr.v,x:pt.x,y:pt.y}); });
   cand.sort((a,b)=>a.v-b.v||a.i-b.i);
   const X=innerWidth<=820?10:20, levels=[...new Set(cand.map(c=>c.v))], boxes=[], placed=[];
-  for(const c of cand){ if(placed.length>=X) break;
+  for(const c of cand){ if(placed.length>=X) break; if(c.i===selI) continue; // 카드가 열린 곳은 순위만 세고 말풍선은 숨김
     const rank=levels.indexOf(c.v), medal=rank<3?rank+1:0, txt=won(c.v), w=textW(txt)+19+(medal?20:0), h=25, g=9;
     let got=null;
     for(const pos of ['t','b','r','l']){
       const b = pos==='t'?{x1:c.x-w/2,y1:c.y-g-h}: pos==='b'?{x1:c.x-w/2,y1:c.y+g}: pos==='r'?{x1:c.x+g,y1:c.y-h/2}:{x1:c.x-g-w,y1:c.y-h/2};
       b.x2=b.x1+w; b.y2=b.y1+h;
-      if(b.x1<2||b.x2>mw.width-2||b.y1<top||b.y2>bot) continue;
+      if(b.x1<2||b.x2>mw.width-2||b.y1<top||b.y2>bot||hitUI(b)) continue;
       if(boxes.some(o=>b.x1<o.x2&&b.x2>o.x1&&b.y1<o.y2&&b.y2>o.y1)) continue;
       got={pos,b}; break; }
     if(!got) continue; boxes.push(got.b); placed.push({...c,medal,txt,pos:got.pos}); }
@@ -253,7 +265,7 @@ function layoutLabels(){
 // 열린 카드가 화면 밖(위 필터·아래 목록·좌우)으로 나가면 지도를 살짝 옮겨 다 보이게
 function fitCard(){ const c=document.querySelector('.card'); if(!c||!map.panBy) return;
   const r=c.getBoundingClientRect(), mw=document.querySelector('.mapwrap').getBoundingClientRect();
-  const top=document.querySelector('.top').getBoundingClientRect().bottom+8; let bot=mw.bottom-8;
+  const top=Math.max(document.querySelector('.bar').getBoundingClientRect().bottom, document.querySelector('.status').getBoundingClientRect().bottom)+8; let bot=mw.bottom-8;
   if(innerWidth<=820) bot=Math.min(bot, document.getElementById('panel').getBoundingClientRect().top-8);
   let dx=0, dy=0; if(r.top<top) dy=r.top-top; else if(r.bottom>bot) dy=r.bottom-bot;
   if(r.left<mw.left+8) dx=r.left-mw.left-8; else if(r.right>mw.right-8) dx=r.right-mw.right+8;
@@ -261,11 +273,11 @@ function fitCard(){ const c=document.querySelector('.card'); if(!c||!map.panBy) 
 function infoHtml(){ return `<b>온통대전 앱의 캐시백 표시를 옮긴 비공식 지도예요.</b> 결제 전 앱에서 한 번 더 확인하세요.<br>가맹점: 앱 표시 기준 2026-11-05${PU?` · 가격: 오피넷 ${esc(when(PU))}`:''}${FORM?`<br><a href="${reportUrl()}" target="_blank" rel="noopener">정보 제보하기</a>`:''}`; }
 function openCard(i, pan){
   const p=DATA[i];
-  closeCard();
+  hideCard(); closeInfo();
   overlay = new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(p.y,p.x), content:card(p,i), yAnchor:1, zIndex:10, clickable:true});
   overlay.setMap(map);
   selI=i; markers[i].setImage(imgFor(i)); markers[i].setZIndex(9);
-  if(innerWidth<=820){ document.getElementById('panel').classList.add('min'); document.body.classList.add('min'); }
+  if(innerWidth<=820){ if(preCardMin===null) preCardMin=panelEl().classList.contains('min'); setPanel(true); }
   setTimeout(fitCard, pan?450:280); layoutLabels();
   if(pan) map.panTo(new kakao.maps.LatLng(p.y,p.x));
   const el=document.querySelector(`.item[data-i="${i}"]`); if(el){el.classList.add('sel'); el.scrollIntoView({block:'nearest'});}
@@ -286,8 +298,13 @@ document.getElementById('list').addEventListener('click',e=>{const it=e.target.c
 document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{const f=c.dataset.f; state[f]=!state[f]; c.classList.toggle('on',state[f]); closeCard(); render();}));
 document.querySelectorAll('#fuel button').forEach(b=>b.addEventListener('click',()=>{ state.fuel=b.dataset.p; document.querySelectorAll('#fuel button').forEach(x=>x.classList.toggle('on',x===b)); closeCard(); render(); }));
 document.getElementById('q').addEventListener('input',e=>{state.q=e.target.value.trim().toLowerCase(); render();});
-document.getElementById('grip').addEventListener('click',()=>{const a=document.getElementById('panel'); a.classList.toggle('min'); document.body.classList.toggle('min'); setTimeout(layoutLabels,260);});
-document.getElementById('infoBtn').addEventListener('click',()=>{ const inf=document.getElementById('info'); inf.hidden=!inf.hidden; if(!inf.hidden) inf.innerHTML=infoHtml(); setTimeout(layoutLabels,0); });
+// 손잡이: 탭하면 접기·펴기, 위로 쓸면 펴기, 아래로 쓸면 접기
+{ const g=document.getElementById('grip'); let y0=null, swiped=false;
+  g.addEventListener('click',()=>{ if(swiped){swiped=false;return;} preCardMin=null; setPanel(!panelEl().classList.contains('min')); });
+  g.addEventListener('touchstart',e=>{ y0=e.touches[0].clientY; swiped=false; },{passive:true});
+  g.addEventListener('touchend',e=>{ if(y0===null) return; const dy=e.changedTouches[0].clientY-y0; y0=null; if(Math.abs(dy)>25){ swiped=true; preCardMin=null; setPanel(dy>0); } },{passive:true}); }
+document.getElementById('infoBtn').addEventListener('click',e=>{ e.stopPropagation(); const inf=document.getElementById('info'); inf.hidden=!inf.hidden; if(!inf.hidden) inf.innerHTML=infoHtml(); setTimeout(layoutLabels,0); });
+document.addEventListener('click',e=>{ if(!e.target.closest('#info,#infoBtn')) closeInfo(); });
 addEventListener('resize',()=>setTimeout(layoutLabels,100));
 document.getElementById('zin').addEventListener('click',()=>{ if(map) map.setLevel(Math.max(1,map.getLevel()-1),{animate:true}); });
 document.getElementById('zout').addEventListener('click',()=>{ if(map) map.setLevel(Math.min(14,map.getLevel()+1),{animate:true}); });
@@ -307,7 +324,8 @@ kakao.maps.load(()=>{
   const size=new kakao.maps.Size(28,28), opt={offset:new kakao.maps.Point(14,14)}, COL={ok:'#0f9d8a',check:'#d98a00',no:'#8a939e'};
   for(const c in COL){ imgs[c]=new kakao.maps.MarkerImage(dotSvg(COL[c]),size,opt); imgsBig[c]=new kakao.maps.MarkerImage(dotSvg(COL[c],true),size,opt); }
   markers = DATA.map((p,i)=>{ const m=new kakao.maps.Marker({position:new kakao.maps.LatLng(p.y,p.x), image:imgs[p.c], title:p.n, zIndex:p.c==='no'?1:3}); kakao.maps.event.addListener(m,'click',()=>openCard(i,false)); return m; });
-  kakao.maps.event.addListener(map,'click',closeCard);
+  kakao.maps.event.addListener(map,'click',()=>{ closeCard(); closeInfo(); });
+  kakao.maps.event.addListener(map,'dragstart',()=>{ closeCard(); closeInfo(); });
   kakao.maps.event.addListener(map,'idle',layoutLabels);
   render();
   loadReports(); loadPrices();
