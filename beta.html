@@ -90,7 +90,8 @@ if(!/^#ops-/.test(location.hash)){var cf=document.createElement('script');cf.def
   .search input{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;font-family:inherit;outline:none}
   .search input:focus{border-color:var(--accent)}
   .count{font-size:12.5px;color:var(--sub);padding:8px 14px 4px}
-  .countrow{display:flex;align-items:center;gap:8px;padding-right:12px} .countrow .count{flex:1}
+  .countrow{display:flex;align-items:center;gap:8px;padding:8px 12px 4px} .countrow .count{flex:1;padding:0;text-align:right}
+  .scope{display:flex;background:var(--no-soft);border-radius:8px;padding:2px;flex:none} .scope button{border:0;background:none;font:inherit;font-size:12.5px;color:var(--sub);padding:5px 9px;border-radius:6px;cursor:pointer} .scope button.on{background:#fff;color:var(--ink);font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.08)} .scope.off{opacity:.45}
   .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex:none;margin-top:4px}
   .seg button{border:0;background:#fff;padding:4px 10px;font-size:12px;font-family:inherit;cursor:pointer;color:var(--sub)} .seg button.on{background:var(--ink);color:#fff;font-weight:600}
   .item .pr{grid-row:1 / span 2;grid-column:3;text-align:right;align-self:center;white-space:nowrap} .item .pr b{font-size:15px} .item .pr small{font-size:12px;color:var(--sub);margin-left:1px}
@@ -157,7 +158,7 @@ if(!/^#ops-/.test(location.hash)){var cf=document.createElement('script');cf.def
       <div class="phead" id="phead">
         <div class="grip" id="grip" aria-label="목록 접기·펴기" role="button"><span></span></div>
         <div class="search"><input id="q" type="search" placeholder="이름·동네·주소 검색"></div>
-        <div class="count" id="count"></div>
+        <div class="countrow"><div class="scope" id="scope"><button data-s="view">이 지도 안</button><button data-s="all">대전 전체</button></div><div class="count" id="count"></div></div>
       </div>
       <div class="list" id="list"></div>
     </aside>
@@ -238,7 +239,11 @@ function vote(i,result,ops){
   fetch(FORM.action,{method:'POST',mode:'no-cors',body}).then(()=>{ if(!ops) lsSet(key,String(Date.now())); msg.textContent=ops?'앱 표시대로 되돌렸어요.':'고마워요! 확인 필요로 옮기고 운영자에게 알렸어요.'; const t=new Date(); applyReport(p,result,`${t.getMonth()+1}/${t.getDate()}`); markers[i].setImage(imgFor(i)); render(); })
     .catch(()=>{ msg.textContent='전송에 실패했어요. 잠시 후 다시 눌러 주세요.'; document.querySelectorAll('.vote button').forEach(b=>b.disabled=false); });
 }
-const state = {ok:true, no:false, check:false, q:'', fuel:'B027'};
+const state = {ok:true, no:false, check:false, q:'', fuel:'B027', scope:'view'};
+// 마지막에 고른 유종·상태·리스트 범위를 이 브라우저에 기억해 둬요
+const PREF_KEYS=['fuel','ok','no','check','scope'];
+try{ const sp=JSON.parse(localStorage.getItem('pref')||'null'); if(sp){ if(['B027','D047','K015'].includes(sp.fuel)) state.fuel=sp.fuel; ['ok','no','check'].forEach(k=>{ if(typeof sp[k]==='boolean') state[k]=sp[k]; }); if(sp.scope==='all'||sp.scope==='view') state.scope=sp.scope; } }catch(_){}
+function savePref(){ try{ const o={}; PREF_KEYS.forEach(k=>o[k]=state[k]); localStorage.setItem('pref',JSON.stringify(o)); }catch(_){} }
 // 오피넷 가격 (하루 4번 갱신되는 prices.json). 정가 그대로 보여줘요
 const FUEL={B027:'휘발유',D047:'경유',K015:'LPG'};
 let PR={}, PU='';
@@ -286,7 +291,7 @@ function priceBlock(p){ const s=p.o&&PR[p.o]; if(!s) return p.o||!PU?'':'<div cl
   return `<div class="price">${rows}<div class="src">오피넷 ${esc(when(PU))} 기준</div></div>`; }
 // 패널: 카드 열기 직전 상태를 기억했다가 카드가 닫히면 그대로 돌려놔요(카드가 열린 동안 사용자가 직접 바꾸면 그걸 존중)
 const panelEl=()=>document.getElementById('panel'); let preCardMin=null;
-function setPanel(min){ panelEl().classList.toggle('min',min); document.body.classList.toggle('min',min); setTimeout(layoutLabels,260); }
+function setPanel(min){ panelEl().classList.toggle('min',min); document.body.classList.toggle('min',min); setTimeout(()=>{ layoutLabels(); if(!min&&state.scope==='view'&&!state.q) renderList(); },260); }
 function hideCard(){ if(overlay){overlay.setMap(null); overlay=null;} document.querySelectorAll('.item.sel').forEach(e=>e.classList.remove('sel'));
   if(selI>=0&&markers[selI]){ const j=selI; selI=-1; markers[j].setImage(imgFor(j)); markers[j].setZIndex(DATA[j].c==='no'?1:3); layoutLabels(); } selI=-1; }
 function closeCard(){ const had=!!overlay; hideCard(); if(had&&preCardMin!==null&&innerWidth<=820) setPanel(preCardMin); preCardMin=null; }
@@ -354,20 +359,39 @@ function openCard(i, pan){ userTouched=true;
   if(pan) map.panTo(new kakao.maps.LatLng(p.y,p.x));
   const el=document.querySelector(`.item[data-i="${i}"]`); if(el){el.classList.add('sel'); el.scrollIntoView({block:'nearest'});}
 }
-function render(){
+// 리스트 범위 '이 지도 안': 지도에서 실제로 보이는 영역(모바일은 펼친 목록 위쪽)에 있는 곳만
+function inView(p){ if(!map||!map.getProjection) return true; const mw=document.querySelector('.mapwrap').getBoundingClientRect();
+  let bot=mw.height; if(innerWidth<=820&&!panelEl().classList.contains('min')) bot=Math.min(bot, panelEl().getBoundingClientRect().top-mw.top);
+  const pt=map.getProjection().containerPointFromCoords(new kakao.maps.LatLng(p.y,p.x)); return pt.x>=0&&pt.x<=mw.width&&pt.y>=0&&pt.y<=bot; }
+function renderList(){
   const list=document.getElementById('list'); let n=0, html='';
+  const local=state.scope==='view'&&!state.q;
   const pr=DATA.map(p=>priceOf(p));
-  const order=DATA.map((p,i)=>i).filter(i=>visible(DATA[i])).sort((a,b)=>((pr[a]?pr[a].v:1e9)-(pr[b]?pr[b].v:1e9)) || (RANK[DATA[a].c]-RANK[DATA[b].c]) || DATA[a].g.localeCompare(DATA[b].g) || DATA[a].n.localeCompare(DATA[b].n));
+  const order=DATA.map((p,i)=>i).filter(i=>visible(DATA[i])&&(!local||inView(DATA[i]))).sort((a,b)=>((pr[a]?pr[a].v:1e9)-(pr[b]?pr[b].v:1e9)) || (RANK[DATA[a].c]-RANK[DATA[b].c]) || DATA[a].g.localeCompare(DATA[b].g) || DATA[a].n.localeCompare(DATA[b].n));
   for(const i of order){ const p=DATA[i]; n++;
-    html+=`<div class="item" data-i="${i}"><span class="badge ${BADGE[p.c]}">${SHORT[p.c]}</span><div class="nm">${esc(p.n)}</div><div class="ad">${esc(p.g)} · ${esc(p.a.replace(/^대전(광역시)?\s*\S+구\s*/,''))}</div>${pr[i]?`<div class="pr"><b>${won(pr[i].v)}</b><small>원</small></div>`:'<div class="pr none">가격 정보 없음</div>'}</div>`; }
-  list.innerHTML = html || '<div class="count" style="padding:16px">조건에 맞는 곳이 없어요.</div>';
-  document.getElementById('count').innerHTML = `${n}곳${PU?` · 가격 ${esc(when(PU))}`:''}`;
+    html+=`<div class="item${i===selI?' sel':''}" data-i="${i}"><span class="badge ${BADGE[p.c]}">${SHORT[p.c]}</span><div class="nm">${esc(p.n)}</div><div class="ad">${esc(p.g)} · ${esc(p.a.replace(/^대전(광역시)?\s*\S+구\s*/,''))}</div>${pr[i]?`<div class="pr"><b>${won(pr[i].v)}</b><small>원</small></div>`:'<div class="pr none">가격 정보 없음</div>'}</div>`; }
+  const sig=order.join(',');
+  if(list.dataset.sig!==sig){ const keep=list.scrollTop, same=list.dataset.sig&&list.dataset.sig.split(',')[0]===String(order[0]);
+    list.innerHTML = html || `<div class="count" style="padding:16px">${local?"이 지도 안에는 조건에 맞는 곳이 없어요.<br>지도를 넓히거나 '대전 전체'를 눌러 보세요.":'조건에 맞는 곳이 없어요.'}</div>`;
+    list.dataset.sig=sig; list.scrollTop=same?keep:0;
+    const s=list.querySelector('.item.sel'); if(s) s.scrollIntoView({block:'nearest'}); }
+  document.getElementById('scope').classList.toggle('off',!!state.q);
+  document.getElementById('count').innerHTML = `${state.q?'검색 ':''}${n}곳${PU?` · 가격 ${esc(when(PU))}`:''}`;
+}
+function render(){
+  renderList();
   markers.forEach((m,i)=>m.setMap(visible(DATA[i])?map:null));
   layoutLabels();
 }
+function syncFilterUI(){
+  document.querySelectorAll('#fuel button').forEach(x=>x.classList.toggle('on',x.dataset.p===state.fuel));
+  document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',!!state[c.dataset.f]));
+  document.querySelectorAll('#scope button').forEach(x=>x.classList.toggle('on',x.dataset.s===state.scope)); }
+syncFilterUI();
+document.querySelectorAll('#scope button').forEach(b=>b.addEventListener('click',()=>{ state.scope=b.dataset.s; savePref(); syncFilterUI(); renderList(); }));
 document.getElementById('list').addEventListener('click',e=>{const it=e.target.closest('.item'); if(it){ openCard(+it.dataset.i,true); }});
-document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{const f=c.dataset.f; state[f]=!state[f]; c.classList.toggle('on',state[f]); closeCard(); render();}));
-document.querySelectorAll('#fuel button').forEach(b=>b.addEventListener('click',()=>{ state.fuel=b.dataset.p; document.querySelectorAll('#fuel button').forEach(x=>x.classList.toggle('on',x===b)); closeCard(); render(); }));
+document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{const f=c.dataset.f; state[f]=!state[f]; c.classList.toggle('on',state[f]); savePref(); closeCard(); render();}));
+document.querySelectorAll('#fuel button').forEach(b=>b.addEventListener('click',()=>{ state.fuel=b.dataset.p; savePref(); syncFilterUI(); closeCard(); render(); }));
 document.getElementById('q').addEventListener('input',e=>{state.q=e.target.value.trim().toLowerCase(); render();});
 // 패널 머리(손잡이·검색창·개수): 손잡이를 탭하면 접기·펴기, 머리 어디서든 위로 쓸면 펴기·아래로 쓸면 접기
 { const h=document.getElementById('phead'), g=document.getElementById('grip'); let y0=null, swiped=false;
@@ -426,7 +450,7 @@ kakao.maps.load(()=>{
   markers = DATA.map((p,i)=>{ const m=new kakao.maps.Marker({position:new kakao.maps.LatLng(p.y,p.x), image:imgs[p.c], title:p.n, zIndex:p.c==='no'?1:3}); kakao.maps.event.addListener(m,'click',()=>openCard(i,false)); return m; });
   kakao.maps.event.addListener(map,'click',()=>{ closeCard(); closeInfo(); });
   kakao.maps.event.addListener(map,'dragstart',()=>{ closeCard(); closeInfo(); });
-  kakao.maps.event.addListener(map,'idle',layoutLabels);
+  kakao.maps.event.addListener(map,'idle',()=>{ layoutLabels(); if(state.scope==='view'&&!state.q) renderList(); });
   if(lastPos) startAtMe(); else centerOn(new kakao.maps.LatLng(START.city.y,START.city.x), START.city.level);
   render();
   loadReports(); loadPrices();
