@@ -592,7 +592,7 @@ async function renderModal(top){ const b=document.getElementById('mbody'); const
   b.innerHTML = mtab==='guide' ? guideHtml() : mtab==='notice' ? noticeHtml() : mtab==='board' ? (b.innerHTML.includes('class="wr"')||b.innerHTML.includes('class="cw"') ? b.innerHTML : '<div class="empty">불러오는 중…</div>') : talkHtml();
   if(mtab==='board') b.innerHTML = await boardHtml();
   for(const k in draft){ const e=document.getElementById(k); if(e&&!e.value) e.value=draft[k]; }
-  b.scrollTop=keep; document.getElementById('mdesc').innerHTML=`<b style="color:var(--ink)">온통대전 앱의 캐시백 표시를 옮긴 비공식 지도예요.</b> 결제 전 앱에서 한 번 더 확인하세요. 가맹점 앱 표시 기준 2026-11-05${PU?` · 가격 오피넷 ${esc(when(PU))}`:''}`; }
+  b.scrollTop=keep; document.getElementById('mdesc').innerHTML=`<b style="color:var(--ink)">온통대전 앱의 캐시백 표시를 옮긴 참고용 지도예요.</b> 결제 전 앱에서 한 번 더 확인하세요. 가맹점 앱 표시 기준 2026-11-05${PU?` · 가격 오피넷 ${esc(when(PU))}`:''}`; }
 function openModal(tab){ mtab=tab||(markNoticeDot()?'notice':(mtab||'guide')); bv.post=null; bv.replyTo=null; document.getElementById('modal').hidden=false; closeCard(); renderModal(true); }
 function closeModal(){ document.getElementById('modal').hidden=true; }
 document.getElementById('modal').addEventListener('click',e=>{ if(e.target.id==='modal'||e.target.closest('.mx')) return closeModal();
