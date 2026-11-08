@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>온통대전 캐시백 지도</title>
-<meta name="description" content="온통대전 캐시백 되는 대전 주유소·충전소를 오피넷 가격과 함께 지도에서 한눈에 보세요.">
+<title>페이지 · 지역화폐 지도</title>
+<meta name="description" content="페이지 · 지역화폐 지도 — 온통대전 캐시백 되는 대전 주유소·충전소와 유가를 지도에서 한눈에 보세요.">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="온통대전 캐시백 지도">
-<meta property="og:title" content="온통대전 캐시백 지도">
-<meta property="og:description" content="캐시백 되는 대전 주유소·충전소를 오늘 가격과 함께 한눈에">
-<meta property="og:image" content="https://payji.kr/og.png">
+<meta property="og:site_name" content="페이지">
+<meta property="og:title" content="페이지 · 지역화폐 지도">
+<meta property="og:description" content="온통대전 캐시백 되는 주유소·충전소와 유가를 지도에서 한눈에">
+<meta property="og:image" content="https://payji.kr/og.png?v=2">
 <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta property="og:url" content="https://payji.kr/">
 <meta name="twitter:card" content="summary_large_image">
@@ -33,6 +33,11 @@ if(!/^#ops-/.test(location.hash)){var cf=document.createElement('script');cf.def
   .top>*{pointer-events:auto}
   .pill{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.9);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:1px solid rgba(0,0,0,.06);border-radius:999px;padding:6px 6px 6px 15px;box-shadow:0 2px 10px rgba(0,0,0,.14)}
   .pill h1{font-size:15.5px;margin:0;font-weight:700;letter-spacing:-.2px;white-space:nowrap}
+  /* 브랜드: 아이콘 22 + 페이지(16/800) + 점 3px + 지역화폐 지도(12/500) — GPT·Claude 합의 2026-11-08 */
+  .pill:has(.brand){padding-left:8px}
+  .brand{display:flex;align-items:center;gap:7px} .brand img{width:22px;height:22px;border-radius:6px;display:block;flex:none}
+  .brand b{font-size:16px;font-weight:800;letter-spacing:-.4px;color:#1B1F24} .brand i{width:3px;height:3px;border-radius:50%;background:#ADB6BC;flex:none}
+  .brand span{font-size:12px;font-weight:500;color:#5B6470;letter-spacing:-.1px}
   .pill .i{width:24px;height:24px;border-radius:50%;border:0;background:#eef0f2;color:var(--sub);font:700 13px/24px Pretendard,sans-serif;cursor:pointer;padding:0}
   .bar{display:flex;gap:6px;padding:2px}
   .bar::-webkit-scrollbar{display:none}
@@ -46,6 +51,7 @@ if(!/^#ops-/.test(location.hash)){var cf=document.createElement('script');cf.def
   .mhead{display:flex;align-items:center;gap:8px;padding:14px 16px 4px} .mhead b{font-size:16px;flex:1}
   .mx{border:0;background:#eef0f2;width:30px;height:30px;border-radius:50%;font-size:18px;line-height:30px;cursor:pointer;color:var(--sub);padding:0}
   .mdesc{padding:0 16px 10px;font-size:12px;color:var(--sub);line-height:1.5}
+  .mwhy{margin:2px 16px 10px;padding:7px 11px;border-radius:10px;background:#EAF4F1;color:#2f5f58;font-size:12.5px;line-height:1.4} .mwhy b{color:#0B6F63;font-weight:800;margin-right:6px;letter-spacing:.2px} .mwhy b span{color:#B88600}
   .mtabs{display:flex;border-bottom:1px solid var(--line);padding:0 6px}
   .mtabs button{flex:1;border:0;background:none;padding:11px 2px;font:600 13.5px Pretendard,sans-serif;color:var(--sub);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
   .mtabs button.on{color:var(--ink);border-bottom-color:var(--ink)}
@@ -165,7 +171,7 @@ if(!/^#ops-/.test(location.hash)){var cf=document.createElement('script');cf.def
     <div class="mapwrap">
       <div id="map"></div>
       <div class="top">
-        <div class="pill"><h1>온통대전 캐시백 지도</h1><button class="i" id="infoBtn" aria-label="안내">i</button></div>
+        <div class="pill"><h1 class="brand"><img src="favicon.png?v=3" alt=""><b>페이지</b><i aria-hidden="true"></i><span>지역화폐 지도</span></h1><button class="i" id="infoBtn" aria-label="안내">i</button></div>
         <div class="bar">
           <!-- 업종을 넓히면 여기 앞에 [업종 ▾] 선택이 들어가요 -->
           <div class="seg" id="fuel"><button data-p="B027" class="on">휘발유</button><button data-p="D047">경유</button><button data-p="K015">LPG</button></div>
@@ -184,7 +190,8 @@ if(!/^#ops-/.test(location.hash)){var cf=document.createElement('script');cf.def
   </div>
 </div>
 <div class="modal" id="modal" hidden><div class="msheet" role="dialog" aria-label="안내">
-  <div class="mhead"><b>온통대전 캐시백 지도</b><button class="mx" aria-label="닫기">×</button></div>
+  <div class="mhead"><b>페이지 · 지역화폐 지도</b><button class="mx" aria-label="닫기">×</button></div>
+  <div class="mwhy"><b>PAY<span>地</span></b> 페이(Pay) 되는 곳(地)을 한 페이지에</div>
   <div class="mdesc" id="mdesc"></div>
   <div class="mtabs"><button data-t="notice">공지사항</button><button data-t="board">자유게시판</button><button data-t="talk">운영자에게 말하기</button></div>
   <div class="mbody" id="mbody"></div>
