@@ -497,7 +497,7 @@ function dlg(msg,okText,cancelText){ return new Promise(res=>{ const d=document.
 // --- 공지사항 ---
 let NOTICES=[];
 async function loadNotices(){ if(!FORM||!FORM.notice) return; try{
-  NOTICES=(await fetchStable(FORM.notice,'notice')).slice(1).map((r,i)=>({d:r[0]||'',t:parseKT(r[0]),title:(r[1]||'').trim(),body:r[2]||'',i})).filter(n=>n.title).sort((a,b)=>b.t-a.t||b.i-a.i); }catch(_){} markNoticeDot(); }
+  NOTICES=(await fetchStable(FORM.notice,'notice')).slice(1).map((r,i)=>({d:r[0]||'',t:parseKT(r[0]),title:(r[1]||'').trim(),body:r[2]||'',i})).filter(n=>n.title).sort((a,b)=>b.t-a.t||b.i-a.i); }catch(_){} markNoticeDot(); if(!document.getElementById('modal').hidden&&mtab==='notice') renderModal(false); }
 const noticeKey=n=>n?(n.d+'|'+n.title):'';
 function markNoticeDot(){ const unseen=NOTICES.length&&LS.get('seenNotice','')!==noticeKey(NOTICES[0]); const b=document.getElementById('infoBtn'); let d=b.querySelector('.ndot'); if(unseen&&!d){ d=document.createElement('span'); d.className='ndot'; b.appendChild(d);} if(!unseen&&d) d.remove(); return unseen; }
 function noticeHtml(){ if(!NOTICES.length) return '<div class="empty">아직 공지가 없어요.</div>'; const seen=LS.get('seenNotice','');
