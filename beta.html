@@ -322,7 +322,7 @@ const imgFor = i => (i===selI?imgsBig:imgs)[DATA[i].c];
 // 카드의 '지도에서 보기'·'길찾기'는 고른 지도 쪽 앱·웹으로 열어요
 function placeLinks(p){ const nm=p.kn||p.n;
   if(MAPV==='naver') return { name:'네이버 지도',
-    place:`https://map.naver.com/p/search/${encodeURIComponent('대전 '+p.g+' '+nm)}`,
+    place:`https://map.naver.com/p/search/${encodeURIComponent(p.a)}`,  // 상호는 네이버와 달라 못 찾을 때가 있어 도로명 주소로 검색
     placeApp:`nmap://place?lat=${p.y}&lng=${p.x}&name=${encodeURIComponent(nm)}&appname=${encodeURIComponent('https://payji.kr')}`,  // 이름 검색은 네이버 상호와 달라 못 찾을 때가 있어 좌표로 핀만 꽂아요
     nav:`https://map.naver.com/p/directions/-/${p.x},${p.y},${encodeURIComponent(nm)},,/-/car`,
     app:`nmap://route/car?dlat=${p.y}&dlng=${p.x}&dname=${encodeURIComponent(nm)}&appname=${encodeURIComponent('https://payji.kr')}` };
