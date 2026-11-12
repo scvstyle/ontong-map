@@ -209,7 +209,7 @@ if(!/^#ops-/.test(location.hash)){var cf=document.createElement('script');cf.def
 const MAPV = (()=>{ let v=null; try{ const q=new URLSearchParams(location.search).get('map'); if(q==='naver'||q==='kakao'){ localStorage.setItem('mapv',q); v=q; } else v=localStorage.getItem('mapv'); }catch(_){}
   return (v==='naver'&&'7pzp1heoo6'.indexOf('__')!==0)?'naver':'kakao'; })();
 let K=null;
-function setMapv(v){ try{ localStorage.setItem('mapv',v); }catch(_){} const u=new URL(location.href); u.searchParams.delete('map'); location.replace(u.toString()); }
+function setMapv(v){ try{ localStorage.setItem('mapv',v); if(map){ const c=map.getCenter(); sessionStorage.setItem('mapview',JSON.stringify({y:c.getLat?c.getLat():c.lat(), x:c.getLng?c.getLng():c.lng(), l:map.getLevel()})); } }catch(_){} const u=new URL(location.href); u.searchParams.delete('map'); location.replace(u.toString()); }
 // 네이버 줌(클수록 가까이) ↔ 카카오 레벨(작을수록 가까이)
 const NZ = l => 20-l;
 function makeNaverShim(){ const N=naver.maps;
@@ -323,6 +323,7 @@ const imgFor = i => (i===selI?imgsBig:imgs)[DATA[i].c];
 function placeLinks(p){ const nm=p.kn||p.n;
   if(MAPV==='naver') return { name:'네이버 지도',
     place:`https://map.naver.com/p/search/${encodeURIComponent('대전 '+p.g+' '+nm)}`,
+    placeApp:`nmap://search?query=${encodeURIComponent('대전 '+p.g+' '+nm)}&appname=payji.kr`,
     nav:`https://map.naver.com/p/directions/-/${p.x},${p.y},${encodeURIComponent(nm)},,/-/car`,
     app:`nmap://route/car?dlat=${p.y}&dlng=${p.x}&dname=${encodeURIComponent(nm)}&appname=payji.kr` };
   return { name:'카카오맵', place:p.u || `https://map.kakao.com/link/map/${encodeURIComponent(p.n)},${p.y},${p.x}`,
@@ -343,7 +344,7 @@ function card(p,i){
     ${p.rep?`<div class="why">${esc(p.rep)}</div>`:''}
     ${p.r?`<div class="why">${esc(whyShort(p.r))}${whyShort(p.r)!==p.r?`<details><summary>자세히</summary>${esc(p.r)}</details>`:''}</div>`:''}
     <details><summary>온통대전에 등록된 이름 (${p.rec.length})</summary>${recs}</details>
-    <div class="links"><a href="${L.place}" target="_blank" rel="noopener">${L.name}</a><a class="primary" href="${L.nav}"${L.app?` data-app="${L.app}"`:''} target="_blank" rel="noopener">길찾기</a></div>
+    <div class="links"><a href="${L.place}"${L.placeApp?` data-app="${L.placeApp}"`:''} target="_blank" rel="noopener">${L.name}</a><a class="primary" href="${L.nav}"${L.app?` data-app="${L.app}"`:''} target="_blank" rel="noopener">길찾기</a></div>
     ${FORM?`<div class="vote"><div class="q">${base(p)==='no'?'캐시백이 됐나요?':'정보가 틀렸나요?'}</div><div class="vb">${base(p)==='no'?`<button onclick="vote(${i},POS)">캐시백 됐어요</button>`:`<button onclick="vote(${i},'캐시백 안 됐어요')">캐시백 안 됐어요</button>`}<button onclick="vote(${i},'문을 닫았어요')">문을 닫았어요</button></div>${OPS?`<button class="ops" onclick="vote(${i},OPS_VAL,true)">운영자: 앱 표시대로</button>`:''}<div class="msg" id="votemsg"></div></div>`:''}
   </div>`;
 }
@@ -520,7 +521,9 @@ loadMapSdk(()=>{
   K.event.addListener(map,'click',()=>{ closeCard(); closeInfo(); });
   K.event.addListener(map,'dragstart',()=>{ closeCard(); closeInfo(); });
   K.event.addListener(map,'idle',()=>{ layoutLabels(); if(state.scope==='view'&&!state.q) renderList(); });
-  if(lastPos) startAtMe(); else centerOn(new K.LatLng(START.city.y,START.city.x), START.city.level);
+  let mv=null; try{ mv=JSON.parse(sessionStorage.getItem('mapview')||'null'); sessionStorage.removeItem('mapview'); }catch(_){}
+  if(mv&&mv.y){ userTouched=true; map.setLevel(mv.l); map.setCenter(new K.LatLng(mv.y,mv.x)); if(lastPos) showMe(lastPos,false); }  // 지도를 바꾸면 보던 자리 그대로
+  else if(lastPos) startAtMe(); else centerOn(new K.LatLng(START.city.y,START.city.x), START.city.level);
   render();
   loadReports(); loadPrices();
 });
