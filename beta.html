@@ -213,7 +213,7 @@ function setMapv(v){ try{ localStorage.setItem('mapv',v); if(map){ const c=map.g
 // 네이버 줌(클수록 가까이) ↔ 카카오 레벨(작을수록 가까이)
 const NZ = l => 20-l;
 function makeNaverShim(){ const N=naver.maps;
-  class Map_{ constructor(el,o){ this._n=new N.Map(el,{center:o.center, zoom:NZ(o.level), minZoom:6, maxZoom:20, zoomControl:false, mapDataControl:false, scaleControl:false, logoControlOptions:{position:N.Position.BOTTOM_LEFT}}); this._el=el; }
+  class Map_{ constructor(el,o){ this._n=new N.Map(el,{center:o.center, zoom:NZ(o.level), minZoom:6, maxZoom:19, zoomControl:false, mapDataControl:false, scaleControl:false, logoControlOptions:{position:N.Position.BOTTOM_LEFT}}); this._el=el; }
     getLevel(){ return 20-this._n.getZoom(); } setLevel(l,o){ this._n.setZoom(NZ(l), !!(o&&o.animate)); }
     getCenter(){ return this._n.getCenter(); } setCenter(ll){ this._n.setCenter(ll); } panTo(ll){ this._n.panTo(ll); } panBy(dx,dy){ this._n.panBy(new N.Point(dx,dy)); }
     getProjection(){ const n=this._n, pj=n.getProjection(), el=this._el;
@@ -292,7 +292,7 @@ function voteSend(i,result,ops){
   const p=DATA[i], key='vote:'+p.ap, msg=document.getElementById('votemsg');
   const prev=lsGet(key);
   if(!ops && prev && Date.now()-(+prev)<30*864e5){ msg.textContent='이미 알려주셨어요. 고마워요!'; return; }
-  const body=new URLSearchParams(); body.set(FORM.name,p.n); body.set(FORM.addr,p.a);
+  const body=new URLSearchParams(); body.set(FORM.name,p.n0||p.n); body.set(FORM.addr,p.a);
   if(result===OPS_VAL){ body.set(FORM.result,'__other_option__'); body.set(FORM.result+'.other_option_response',OPS_VAL); body.set(FORM.comment,OPS_TOKEN); } else body.set(FORM.result,result);
   document.querySelectorAll('.vote button').forEach(b=>b.disabled=true);
   msg.textContent='보내는 중…';
@@ -330,7 +330,7 @@ let map, overlay, markers=[], imgs={}, imgsBig={}, selI=-1;
 const imgFor = i => (i===selI?imgsBig:imgs)[DATA[i].c];
 // 카드의 '지도에서 보기'·'길찾기'는 고른 지도 쪽 앱·웹으로 열어요
 // 네이버로 볼 땐 이름을 네이버 상호로(없으면 온통대전 앱 이름). 제보는 주소로 맞추므로 이름을 바꿔도 괜찮아요
-if(MAPV==='naver') DATA.forEach(p=>{ p.n=p.nn||p.an; });
+DATA.forEach(p=>{ p.n0=p.n; if(MAPV==='naver') p.n=p.nn||p.an; });  // n0: 지도와 상관없는 고정 이름(제보·정렬용)
 function placeLinks(p){ const nm=p.kn||p.n;
   if(MAPV==='naver'){ const q=p.nn?`대전 ${p.g} ${p.nn}`:p.a;  // 네이버 상호가 있으면 상호로, 없으면 도로명 주소로
     return { name:'네이버 지도',
@@ -357,7 +357,7 @@ function card(p,i){
     ${p.b?`<div class="row">${esc(p.b)}${p.t==='충전소'?' · 충전소':''}</div>`:''}
     ${priceBlock(p)}
     ${p.rep?`<div class="why">${esc(p.rep)}</div>`:''}
-    ${p.r?`<div class="why">${esc(whyShort(p.r))}${whyShort(p.r)!==p.r?`<details><summary>자세히</summary>${esc(p.r)}</details>`:''}</div>`:''}
+    ${p.r?`<div class="why">${esc(whyShort(p.r))}${whyShort(p.r)!==p.r&&!p.r.startsWith('카카오맵에서')?`<details><summary>자세히</summary>${esc(p.r)}</details>`:''}</div>`:''}
     <details><summary>온통대전에 등록된 이름 (${p.rec.length})</summary>${recs}</details>
     <div class="links"><a href="${L.place}"${L.placeApp?` data-app="${L.placeApp}"`:''} target="_blank" rel="noopener">${L.name}</a><a class="primary" href="${L.nav}"${L.app?` data-app="${L.app}"`:''} target="_blank" rel="noopener">길찾기</a></div>
     ${FORM?`<div class="vote"><div class="q">${base(p)==='no'?'캐시백이 됐나요?':'정보가 틀렸나요?'}</div><div class="vb">${base(p)==='no'?`<button onclick="vote(${i},POS)">캐시백 됐어요</button>`:`<button onclick="vote(${i},'캐시백 안 됐어요')">캐시백 안 됐어요</button>`}<button onclick="vote(${i},'문을 닫았어요')">문을 닫았어요</button></div>${OPS?`<button class="ops" onclick="vote(${i},OPS_VAL,true)">운영자: 앱 표시대로</button>`:''}<div class="msg" id="votemsg"></div></div>`:''}
@@ -381,7 +381,7 @@ function textW(s){ if(!ctx2d){ ctx2d=document.createElement('canvas').getContext
 function whyShort(r){
   if(r.startsWith('같은 주소에 캐시백 제공/미제공')) return "온통대전 앱에 이곳이 '제공'과 '미제공'으로 함께 올라와 있어요.";
   if(r.includes("다른 주소로 '미제공'")) return "온통대전 앱에 같은 곳이 '미제공'으로도 올라와 있어요.";
-  if(r.startsWith('카카오맵에서 영업 중인 곳을 찾지 못함')) return '카카오맵에 없는 곳이에요. 문을 닫았거나 옮겼을 수 있어요.';
+  if(r.startsWith('카카오맵에서 영업 중인 곳을 찾지 못함')) return '지금도 영업 중인지 확인되지 않은 곳이에요. 문을 닫았거나 옮겼을 수 있어요.';
   if(r.startsWith('카카오맵상 차량 주유소가 아닌')) return '차량 주유소가 아닌 석유 판매점일 수 있어요.';
   if(r.startsWith('앱 주소(')) return '온통대전 앱의 주소와 실제 주소가 달라요.';
   return r; }
@@ -445,7 +445,7 @@ function renderList(){
   const list=document.getElementById('list'); let n=0, html='';
   const local=state.scope==='view'&&!state.q;
   const pr=DATA.map(p=>priceOf(p));
-  const order=DATA.map((p,i)=>i).filter(i=>visible(DATA[i])&&(!local||inView(DATA[i]))).sort((a,b)=>((pr[a]?pr[a].v:1e9)-(pr[b]?pr[b].v:1e9)) || (RANK[DATA[a].c]-RANK[DATA[b].c]) || DATA[a].g.localeCompare(DATA[b].g) || DATA[a].n.localeCompare(DATA[b].n));
+  const order=DATA.map((p,i)=>i).filter(i=>visible(DATA[i])&&(!local||inView(DATA[i]))).sort((a,b)=>((pr[a]?pr[a].v:1e9)-(pr[b]?pr[b].v:1e9)) || (RANK[DATA[a].c]-RANK[DATA[b].c]) || DATA[a].g.localeCompare(DATA[b].g) || DATA[a].n0.localeCompare(DATA[b].n0));
   for(const i of order){ const p=DATA[i]; n++;
     html+=`<div class="item${i===selI?' sel':''}" data-i="${i}"><span class="badge ${BADGE[p.c]}">${SHORT[p.c]}</span><div class="nm">${esc(p.n)}</div><div class="ad">${esc(p.g)} · ${esc(p.a.replace(/^대전(광역시)?\s*\S+구\s*/,''))}</div>${pr[i]?`<div class="pr"><b>${won(pr[i].v)}</b><small>원</small></div>`:'<div class="pr none">가격 정보 없음</div>'}</div>`; }
   const sig=order.join(',');
