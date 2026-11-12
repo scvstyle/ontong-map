@@ -328,8 +328,11 @@ function placeLinks(p){ const nm=p.kn||p.n;
     app:`nmap://route/car?dlat=${p.y}&dlng=${p.x}&dname=${encodeURIComponent(nm)}&appname=${encodeURIComponent('https://payji.kr')}` };
   return { name:'카카오맵', place:p.u || `https://map.kakao.com/link/map/${encodeURIComponent(p.n)},${p.y},${p.x}`,
     nav:`https://map.kakao.com/link/to/${encodeURIComponent(nm)},${p.y},${p.x}` }; }
-// 폰에서는 네이버 지도 앱으로 바로 길안내, 앱이 없으면(1.5초 안에 안 넘어가면) 웹으로
-document.addEventListener('click',e=>{ const a=e.target.closest('a[data-app]'); if(!a||!/Android|iPhone|iPad/i.test(navigator.userAgent)) return;
+// 폰에서는 네이버 지도 앱으로 바로. 안드로이드는 공식 intent 주소(앱 없으면 웹으로), 아이폰은 nmap:// 후 1.5초 안에 안 넘어가면 웹으로
+document.addEventListener('click',e=>{ const a=e.target.closest('a[data-app]'); if(!a) return; const ua=navigator.userAgent;
+  if(/Android/i.test(ua)){ e.preventDefault(); const u=a.dataset.app.replace(/^nmap:\/\//,'');
+    location.href=`intent://${u}#Intent;scheme=nmap;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;package=com.nhn.android.nmap;S.browser_fallback_url=${encodeURIComponent(a.href)};end`; return; }
+  if(!/iPhone|iPad/i.test(ua)) return;
   e.preventDefault(); const web=a.href; let left=false; const h=()=>{ if(document.hidden) left=true; }; document.addEventListener('visibilitychange',h);
   location.href=a.dataset.app; setTimeout(()=>{ document.removeEventListener('visibilitychange',h); if(!left&&!document.hidden) location.href=web; },1500); });
 function card(p,i){
