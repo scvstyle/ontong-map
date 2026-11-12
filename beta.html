@@ -323,9 +323,9 @@ const imgFor = i => (i===selI?imgsBig:imgs)[DATA[i].c];
 function placeLinks(p){ const nm=p.kn||p.n;
   if(MAPV==='naver') return { name:'네이버 지도',
     place:`https://map.naver.com/p/search/${encodeURIComponent('대전 '+p.g+' '+nm)}`,
-    placeApp:`nmap://search?query=${encodeURIComponent('대전 '+p.g+' '+nm)}&appname=payji.kr`,
+    placeApp:`nmap://place?lat=${p.y}&lng=${p.x}&name=${encodeURIComponent(nm)}&appname=${encodeURIComponent('https://payji.kr')}`,  // 이름 검색은 네이버 상호와 달라 못 찾을 때가 있어 좌표로 핀만 꽂아요
     nav:`https://map.naver.com/p/directions/-/${p.x},${p.y},${encodeURIComponent(nm)},,/-/car`,
-    app:`nmap://route/car?dlat=${p.y}&dlng=${p.x}&dname=${encodeURIComponent(nm)}&appname=payji.kr` };
+    app:`nmap://route/car?dlat=${p.y}&dlng=${p.x}&dname=${encodeURIComponent(nm)}&appname=${encodeURIComponent('https://payji.kr')}` };
   return { name:'카카오맵', place:p.u || `https://map.kakao.com/link/map/${encodeURIComponent(p.n)},${p.y},${p.x}`,
     nav:`https://map.kakao.com/link/to/${encodeURIComponent(nm)},${p.y},${p.x}` }; }
 // 폰에서는 네이버 지도 앱으로 바로 길안내, 앱이 없으면(1.5초 안에 안 넘어가면) 웹으로
