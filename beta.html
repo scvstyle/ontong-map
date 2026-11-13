@@ -919,7 +919,7 @@ function draw(){
   const sum=U.every?'전체':!eff.length?'':eff.length===1&&eff[0]===GAS?`${GAS} · ${FUELS.find(f=>f[0]===U.fuel)[1]}`:eff.length===1&&ONE(eff[0])?eff[0]:eff.length===1&&U.all[eff[0]]?`${eff[0]} · 전체`:`${eff[0]}${eff.length>1?` 외 ${eff.length-1}`:''} · ${nSub}`;
   cb.innerHTML=`${ic('adjustments-horizontal')}<b>분류 선택</b>${sum?`<i>${e(sum)}</i>`:''}`;
   const pw=document.querySelector('.pill'); if(pw&&pw.offsetWidth) cb.style.minWidth=pw.offsetWidth+'px';
-  document.getElementById('gcol').innerHTML=`<button class="gb all${U.every?' cur':''}" data-g="">${ic('checks')}전체</button>`+CATS.map(([g])=>`<button class="gb${U.sel.includes(g)?(U.every?' on mem':U.cur===g?' cur':' on'):''}" data-g="${e(g)}">${ic(GI[g])}${e(g)}</button>`).join('');
+  document.getElementById('gcol').innerHTML=`<button class="gb all${U.every?' cur':''}" data-g="">${ic('checks')}전체</button>`+CATS.map(([g])=>`<button class="gb${U.sel.includes(g)?(U.every?' on mem':U.cur===g||ONE(g)?' cur':' on'):''}" data-g="${e(g)}">${ic(GI[g])}${e(g)}</button>`).join('');
   const sc=document.getElementById('scol'); sc.hidden=!U.cur;
   if(U.cur===GAS) sc.innerHTML=FUELS.map(([k,n])=>`<button class="rb${U.fuel===k?' on':''}" data-f="${k}"><span class="rd"></span>${n}</button>`).join('');
   else if(U.cur){ const g=U.cur, all=!!U.all[g], on=U.subs[g]||[];
