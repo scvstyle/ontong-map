@@ -998,7 +998,22 @@ function inBox(){ const A=area(), pj=map.getProjection(), a=pj.coordsFromContain
   return {n:Math.max(la(a),la(b)),s:Math.min(la(a),la(b)),w:Math.min(lo(a),lo(b)),e:Math.max(lo(a),lo(b))}; }
 // 멀리 볼 때 화면 좌표 빨리 구하기: 가게마다 지도 엔진에 묻지 않고, 화면 9곳만 정확히 물어 2차식을 맞춘 뒤 그 식으로 계산
 // (카카오·네이버 투영에서 오차 0.01px 미만). 가게 12곳을 정확히 물어 0.05px 넘게 다르면 안 쓰고 하나씩 정확히 계산(null)
-function fastPts(cand,B,pj){ const cx=(B.w+B.e)/2, cy=(B.s+B.n)/2, hx=(B.e-B.w)/2, hy=(B.n-B.s)/2; if(!(hx>0&&hy>0)) return null;
+// 카카오는 화면 좌표를 정수 px로 반올림해 줌 → 위 2차식은 검사에서 걸림. 대신 카카오 내부 좌표(toCoords, 반올림 전)를 가게마다 한 번 구해 두고
+// 화면 px = floor(내부좌표/축척 + 위상)으로 계산(축척 2.5×2^(레벨-3)). 위상은 매번 가게 128곳을 정확히 물어 범위로 잡고,
+// 그 범위 안에서 칸 경계에 걸려 애매한 가게만 정확히 물음 → 결과가 정확 계산과 똑같음
+function kakaoPts(cand,pj){ if(!(K.LatLng.prototype.toCoords&&map.getLevel)) return null;
+  const R=2.5*Math.pow(2,map.getLevel()-3), N=cand.length, kc=r=>r.kc||(r.kc=(c=>[c.getX()/2.5,c.getY()/2.5])(new K.LatLng(r.y,r.x).toCoords()));   // kc는 레벨3 기준(÷2.5)
+  const f=Math.pow(2,map.getLevel()-3), ex=r=>pj.containerPointFromCoords(new K.LatLng(r.y,r.x));
+  let xl=-Infinity, xh=Infinity, yl=-Infinity, yh=Infinity;
+  for(let i=0;i<128;i++){ const r=cand[Math.floor(i*(N-1)/127)], c=kc(r), p=ex(r), dx=p.x-c[0]/f, dy=p.y+c[1]/f; if(dx>xl) xl=dx; if(dx+1<xh) xh=dx+1; if(dy>yl) yl=dy; if(dy+1<yh) yh=dy+1; }
+  if(!(xl<xh&&yl<yh)||!(R>0)) return null;   // 한 칸(1px) 계단 모양이 아니면 포기
+  const E=1e-7, out=new Array(N);
+  for(let i=0;i<N;i++){ const r=cand[i], c=kc(r), u=c[0]/f, v=-c[1]/f, ax=Math.floor(u+xl-E), bx=Math.floor(u+xh+E), ay=Math.floor(v+yl-E), by=Math.floor(v+yh+E);   // 범위를 조금 넓게 잡아 애매하면 정확히 물음
+    if(ax===bx&&ay===by) out[i]={r,x:ax,y:ay}; else { const p=ex(r); out[i]={r,x:p.x,y:p.y}; } }
+  for(let i=0;i<12;i++){ const k=Math.floor((i+.5)*N/12), p=ex(cand[k]); if(p.x!==out[k].x||p.y!==out[k].y) return null; }
+  return out; }
+function fastPts(cand,B,pj){ if(window.__noFast) return null; if(K.LatLng.prototype.toCoords) return kakaoPts(cand,pj);   // 시험용 __noFast: 빠른 계산 끄기
+  const cx=(B.w+B.e)/2, cy=(B.s+B.n)/2, hx=(B.e-B.w)/2, hy=(B.n-B.s)/2; if(!(hx>0&&hy>0)) return null;
   const bas=(u,v)=>[1,u,v,u*v,u*u,v*v], M=[], X=[], Y=[];
   for(const v of [-1,0,1]) for(const u of [-1,0,1]){ const p=pj.containerPointFromCoords(new K.LatLng(cy+v*hy,cx+u*hx)); M.push(bas(u,v)); X.push(p.x); Y.push(p.y); }
   const fit=t=>{ const A=[...Array(6)].map((_,i)=>[...Array(6)].map((_,j)=>M.reduce((s,m)=>s+m[i]*m[j],0)).concat(M.reduce((s,m,k)=>s+m[i]*t[k],0)));   // 최소제곱(정규방정식)
