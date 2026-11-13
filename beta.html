@@ -852,7 +852,7 @@ const gasOn=()=>U.every||(U.sel.includes(GAS)&&!!U.fuel);
 const noFuel=()=>U.every&&!U.fuel;   // '전체'인데 유종을 안 고름 → 주유소는 핀+상호만(가격 없음)
 if(U.fuel) state.fuel=U.fuel;
 // 소분류가 하나도 없는 대분류는 '지금 보고 있는' 것 말고는 선택에서 뺌(연한 청록 안 남게)
-// 소분류가 하나뿐인 대분류(숙박 등): 소분류 열 없이 대분류만 눌러 켜고 끔
+// 소분류가 하나뿐인 대분류(숙박 등): 소분류 열만 안 띄움. 켜고 끄기·짙은/반투명 녹색은 다른 대분류와 같음
 const ONE=g=>g!==GAS&&SUBN[g]&&SUBN[g].length===1;
 const hasSub=g=>g===GAS?!!U.fuel:!!(U.all[g]||(U.subs[g]||[]).length);
 const prune=()=>{ if(U.every) return; U.sel=U.sel.filter(g=>g===U.cur||hasSub(g)); };
@@ -919,10 +919,10 @@ function draw(){
   const sum=U.every?'전체':!eff.length?'':eff.length===1&&eff[0]===GAS?`${GAS} · ${FUELS.find(f=>f[0]===U.fuel)[1]}`:eff.length===1&&ONE(eff[0])?eff[0]:eff.length===1&&U.all[eff[0]]?`${eff[0]} · 전체`:`${eff[0]}${eff.length>1?` 외 ${eff.length-1}`:''} · ${nSub}`;
   cb.innerHTML=`${ic('adjustments-horizontal')}<b>분류 선택</b>${sum?`<i>${e(sum)}</i>`:''}`;
   const pw=document.querySelector('.pill'); if(pw&&pw.offsetWidth) cb.style.minWidth=pw.offsetWidth+'px';
-  document.getElementById('gcol').innerHTML=`<button class="gb all${U.every?' cur':''}" data-g="">${ic('checks')}전체</button>`+CATS.map(([g])=>`<button class="gb${U.sel.includes(g)?(U.every?' on mem':U.cur===g||ONE(g)?' cur':' on'):''}" data-g="${e(g)}">${ic(GI[g])}${e(g)}</button>`).join('');
-  const sc=document.getElementById('scol'); sc.hidden=!U.cur;
+  document.getElementById('gcol').innerHTML=`<button class="gb all${U.every?' cur':''}" data-g="">${ic('checks')}전체</button>`+CATS.map(([g])=>`<button class="gb${U.sel.includes(g)?(U.every?' on mem':U.cur===g?' cur':' on'):''}" data-g="${e(g)}">${ic(GI[g])}${e(g)}</button>`).join('');
+  const sc=document.getElementById('scol'); sc.hidden=!U.cur||ONE(U.cur);   // 소분류 하나뿐이면 열 없음
   if(U.cur===GAS) sc.innerHTML=FUELS.map(([k,n])=>`<button class="rb${U.fuel===k?' on':''}" data-f="${k}"><span class="rd"></span>${n}</button>`).join('');
-  else if(U.cur){ const g=U.cur, all=!!U.all[g], on=U.subs[g]||[];
+  else if(U.cur&&!ONE(U.cur)){ const g=U.cur, all=!!U.all[g], on=U.subs[g]||[];
     sc.innerHTML=`<button class="sb all${all?' on':''}" data-s=""><span class="ck">${ic('checks')}</span>전체</button>`+SUBN[g].map(s=>`<button class="sb${on.includes(s)?' on'+(all?' mem':''):''}" data-s="${e(s)}"><span class="ck">${ic(SICON[s])}</span>${e(s)}</button>`).join(''); }
   requestAnimationFrame(fit); }
 function fit(){ const pa=document.getElementById('panel').getBoundingClientRect(); const lim=(innerWidth<=820?pa.top:innerHeight)-12;
@@ -935,8 +935,7 @@ cats.addEventListener('click',ev=>{ ev.stopPropagation();
     if(!n){ U.every=!U.every; U.cur=null; }   // 대분류 '전체'
     else if(U.every&&U.sel.includes(n)) U.sel=U.sel.filter(x=>x!==n);   // 흐린(기억된) 것 → 기억에서 해제, '전체' 유지
     else { if(U.every){ U.every=false; prune(); }   // 다른 것 → '전체' 끄고 그것 켬(기억된 것 되살아남)
-      if(ONE(n)){ if(U.sel.includes(n)) U.sel=U.sel.filter(x=>x!==n); else { U.sel.push(n); U.all[n]=true; } U.cur=null; }
-      else if(!U.sel.includes(n)){ U.sel.push(n); U.cur=n;
+      if(!U.sel.includes(n)){ U.sel.push(n); U.cur=n;
         // 처음 켜는 대분류는 소분류 '전체'로 시작. 골라 둔 게 있으면 그대로
         if(n===GAS){ if(!U.fuel){ U.fuel=U.lastFuel||'B027'; state.fuel=U.fuel; savePref(); } }
         else if(!hasSub(n)) U.all[n]=true; }
