@@ -253,6 +253,9 @@ body.mini .sb,body.mini .rb{height:28px;font-size:12px} body.mini .sb{padding:0 
 body.mini .sb .ck{width:20px;height:20px} body.mini .sb .ck svg{width:12px;height:12px} body.mini .rb .rd{width:13px;height:13px}
 body.mini .ccol{gap:5px;padding:2px 3px 10px} body.mini .cats{gap:2px}
 body.mini .chip{font-size:11.5px;padding:5px 9px;gap:5px} body.mini .status{gap:5px} body.mini .chip .dot{width:8px;height:8px}
+
+/* 지도 위 핀이 분류 버튼 위로 올라오지 않게(지도 안 겹침 순서를 지도 안에 가둠) — 실제 구현 때도 필요 */
+#map{position:relative;z-index:0}
 </style>
 </head>
 <body>
