@@ -909,7 +909,7 @@ const collapse=()=>{ if(U.open){ U.open=false; draw(); if(!pulsed){ pulsed=true;
 // ---- 캐시백 칩 4번째: 준비 중 ----
 if(!PREF_KEYS.includes('prep')) PREF_KEYS.push('prep');
 { const sp=LSG('pref'); state.prep=sp&&typeof sp.prep==='boolean'?sp.prep:true; }
-{ const c=document.createElement('span'); c.className='chip'+(state.prep?' on':''); c.dataset.f='prep'; c.innerHTML='<span class="dot prep"></span>준비 중';
+{ const c=document.createElement('span'); c.className='chip'+(state.prep?' on':''); c.dataset.f='prep'; c.innerHTML='<span class="dot prep"></span>파악 중';
   document.querySelector('.status').appendChild(c);
   c.addEventListener('click',()=>{ state.prep=!state.prep; c.classList.toggle('on',state.prep); savePref(); closeCard(); refresh(); }); }
 
@@ -1003,7 +1003,7 @@ function drawOdt(){
 function openRow(r,pan){ collapse(); closeStack(); closeCard(); const S=activeSubs();
   const L=placeLinks({n:r.n,x:r.x,y:r.y,a:'대전 '+r.a,g:'',nn:''});
   const el=document.createElement('div');
-  el.innerHTML=`<div class="card"><button class="x">×</button><span class="badge b-prep" style="font-size:11px;font-weight:700;border-radius:6px;padding:3px 6px">캐시백 준비 중</span><h3>${e(r.n)}</h3><div class="cg">${catLine(r)}</div><div class="row">대전 ${e(r.a)}</div><div class="links"><a href="${L.place}"${L.placeApp?` data-app="${L.placeApp}"`:''} target="_blank" rel="noopener">${L.name}</a><a class="primary" href="${L.nav}"${L.app?` data-app="${L.app}"`:''} target="_blank" rel="noopener">길찾기</a></div></div>`;
+  el.innerHTML=`<div class="card"><button class="x">×</button><span class="badge b-prep" style="font-size:11px;font-weight:700;border-radius:6px;padding:3px 6px">캐시백 여부 파악 중</span><h3>${e(r.n)}</h3><div class="cg">${catLine(r)}</div><div class="row">대전 ${e(r.a)}</div><div class="links"><a href="${L.place}"${L.placeApp?` data-app="${L.placeApp}"`:''} target="_blank" rel="noopener">${L.name}</a><a class="primary" href="${L.nav}"${L.app?` data-app="${L.app}"`:''} target="_blank" rel="noopener">길찾기</a></div></div>`;
   el.querySelector('.x').addEventListener('click',ev=>{ ev.stopPropagation(); closeCard(); });
   const pin=document.createElement('div'); pin.className='mp big st-prep'; pin.innerHTML=pinHTML(iconOf(r,S));
   cardPin=new K.CustomOverlay({position:new K.LatLng(r.y,r.x),content:pin,xAnchor:.5,yAnchor:.5,zIndex:9}); cardPin.setMap(map);
@@ -1016,7 +1016,7 @@ closeCard=function(){ const had=!!overlay||!!cardOv; hideCard(); if(had&&preCard
 // ---- 리스트·검색 ----
 let LIMIT=60, sortGas=LSG('gsort')||'price';
 const distTxt=(r,cy,cx)=>{ const m=Math.sqrt(dist2(r,cy,cx))*111000; return m<1000?Math.round(m/10)*10+'m':(m/1000).toFixed(1)+'km'; };
-const itemRow=(r,cy,cx)=>`<div class="item i3" data-r="${r.g}:${r.k}"><span class="badge b-prep">준비 중</span><div class="nm">${e(r.n)}</div><div class="cg">${catLine(r)}</div><div class="ad">${e(r.a.replace(/^\S+구\s*/,''))}</div><div class="ds">${distTxt(r,cy,cx)}</div></div>`;
+const itemRow=(r,cy,cx)=>`<div class="item i3" data-r="${r.g}:${r.k}"><span class="badge b-prep">파악 중</span><div class="nm">${e(r.n)}</div><div class="cg">${catLine(r)}</div><div class="ad">${e(r.a.replace(/^\S+구\s*/,''))}</div><div class="ds">${distTxt(r,cy,cx)}</div></div>`;
 const gasRow=(i,cy,cx)=>{ const p=DATA[i], pr=priceOf(p); return `<div class="item i3${i===selI?' sel':''}" data-i="${i}"><span class="badge ${BADGE[p.c]}">${SHORT[p.c]}</span><div class="nm">${esc(p.n)}</div><div class="cg">주유·충전<s>›</s>${p.t==='충전소'?'충전소':'주유소'}</div><div class="ad">${esc(p.g)} · ${esc(p.a.replace(/^대전(광역시)?\s*\S+구\s*/,''))}</div><div class="pr2">${pr?`<b>${won(pr.v)}</b><small>원</small>`:'<small>가격 없음</small>'}<i>${distTxt(p,cy,cx)}</i></div></div>`; };
 const GRANK={ok:0,check:1,no:2};
 renderList=function(){
