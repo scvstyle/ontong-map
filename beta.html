@@ -1022,7 +1022,7 @@ const GRANK={ok:0,check:1,no:2};
 renderList=function(){
   const list=document.getElementById('list'), cnt=document.getElementById('count'), c=map?map.getCenter():null, cy=c?la(c):36.35, cx=c?lo(c):127.38;
   const q=state.q, local=state.scope==='view'&&!q;
-  document.getElementById('scope').classList.toggle('off',!!q);
+  document.getElementById('scope').classList.toggle('off',false);   // 검색도 '이 지도 안 | 대전 전체'를 따름
   let sg=document.querySelector('.sortseg'); const onlyGas=gasOn()&&!activeSubs().size;
   if(onlyGas&&!q){ if(!sg){ sg=document.createElement('div'); sg.className='sortseg'; sg.innerHTML='<button data-s="price">가격순</button><button data-s="dist">거리순</button>'; document.querySelector('.countrow').insertBefore(sg,cnt);
       sg.addEventListener('click',ev=>{ const b=ev.target.closest('button'); if(b){ sortGas=b.dataset.s; LSS('gsort',sortGas); LIMIT=60; renderList(); } }); }
@@ -1050,6 +1050,11 @@ async function renderSearch(list,cnt,cy,cx){ const q=state.q, my=++renderSearch.
   for(const i in ROWS) for(const r of ROWS[i]){ if(!hitR(r)) continue; if(r.s.some(id=>S.has(id))) A.push({r}); else if(r.s.some(id=>selG.has(META.subs[id][0]))) B.push({r}); else C.push({r}); }
   DATA.forEach((p,i)=>{ if(!visGas(p)) return; (gasOn()?A:C).push({gas:i,p}); });
   const ord=x=>x.sort((a,b)=>{ const ra=a.gas!=null?GRANK[a.p.c]:1, rb=b.gas!=null?GRANK[b.p.c]:1; return ra-rb||dist2(a.p||a.r,cy,cx)-dist2(b.p||b.r,cy,cx); });
+  // '이 지도 안'이면 검색도 지금 지도 안에서만. 밖에 더 있으면 '대전 전체' 안내
+  const full=A.length+B.length+C.length;
+  if(state.scope==='view'&&map){ const X=inBox(), inb=it=>it.gas!=null?inView(it.p):(it.r.y<=X.n&&it.r.y>=X.s&&it.r.x>=X.w&&it.r.x<=X.e); [A,B,C].forEach(arr=>{ const k=arr.filter(inb); arr.length=0; arr.push(...k); }); }
+  const shown=A.length+B.length+C.length, toAll=n=>`<a href="#" class="toAll">대전 전체에 ${n.toLocaleString()}곳</a>`;
+  if(!shown&&full){ list.innerHTML=`<div class="empty">이 지도 안에는 없어요 · ${toAll(full)}</div>`; bindAll(list); cnt.textContent='검색 0곳'; return; }
   [A,B,C].forEach(ord);
   const row=it=>it.gas!=null?gasRow(it.gas,cy,cx):itemRow(it.r,cy,cx);
   const selNames=[...(gasOn()?[GAS]:[]),...U.sel.filter(g=>g!==GAS).flatMap(g=>U.all[g]?[g+' 전체']:(U.subs[g]||[]))];
@@ -1057,9 +1062,11 @@ async function renderSearch(list,cnt,cy,cx){ const q=state.q, my=++renderSearch.
   const lim=renderSearch.lim||{A:40,B:3,C:3};
   const selGn=U.sel.filter(g=>g!==GAS);
   list.innerHTML=sec('선택한 업종',selNames.join(' · '),A,lim.A,'A')+(selGn.length?sec(`${selGn.join('·')}의 다른 업종`,'',B,lim.B,'B'):'')+sec('그 밖의 업종','',C,lim.C,'C');
+  if(shown<full) list.insertAdjacentHTML('beforeend',`<div class="empty">이 지도 밖에도 있어요 · ${toAll(full)}</div>`); bindAll(list);
   list.querySelectorAll('[data-more]').forEach(b=>b.addEventListener('click',()=>{ renderSearch.lim=Object.assign({},lim,{[b.dataset.more]:lim[b.dataset.more]+40}); renderSearch(list,cnt,cy,cx); }));
-  cnt.textContent=`검색 ${(A.length+B.length+C.length).toLocaleString()}곳`; }
+  cnt.textContent=`검색 ${shown.toLocaleString()}곳`; }
 renderSearch.n=0;
+function bindAll(list){ list.querySelectorAll('.toAll').forEach(a=>a.addEventListener('click',ev=>{ ev.preventDefault(); state.scope='all'; savePref(); syncFilterUI(); renderList(); })); }
 document.getElementById('q').addEventListener('input',()=>{ renderSearch.lim=null; });
 document.getElementById('list').addEventListener('click',ev=>{ const it=ev.target.closest('.item[data-r]'); if(!it) return; ev.stopImmediatePropagation();
   const [g,k]=it.dataset.r.split(':').map(Number); const r=ROWS[g]&&ROWS[g][k]; if(r) openRow(r,true); },true);
