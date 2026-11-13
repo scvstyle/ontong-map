@@ -230,6 +230,7 @@ if(!/^#ops-/.test(location.hash)){var cf=document.createElement('script');cf.def
 .mp .pl b{display:block;font:700 11.5px/1.2 Pretendard,sans-serif;color:#1b1f24;letter-spacing:-.2px}
 .mp .pl small{display:block;font:500 10px/1.2 Pretendard,sans-serif;color:#6b7480}
 .mp .pl-b{left:0;top:15px;transform:translateX(-50%)} .mp .pl-t{left:0;bottom:15px;transform:translateX(-50%)}
+.mp .pl-bR{left:-12px;top:15px;text-align:left} .mp .pl-bL{right:-12px;top:15px;text-align:right} .mp .pl-tR{left:-12px;bottom:15px;text-align:left} .mp .pl-tL{right:-12px;bottom:15px;text-align:right}
 .mp .pl-r{left:16px;top:0;transform:translateY(-50%);text-align:left} .mp .pl-l{right:16px;top:0;transform:translateY(-50%);text-align:right}
 /* 숫자 원 */
 .mc{width:var(--d);height:var(--d);border-radius:50%;background:rgba(27,31,36,.86);color:#fff;font:700 13px/1 Pretendard,sans-serif;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-sizing:border-box;box-shadow:0 0 0 4px rgba(27,31,36,.16),0 2px 6px rgba(0,0,0,.25)}
@@ -942,9 +943,12 @@ function gasPin(c,big){ const col={ok:'#0f9d8a',no:'#8a939e',check:'#d98a00'}[c]
 // ---- 마커 ----
 const cvs=document.createElement('canvas').getContext('2d');
 const tw=(t,f)=>{ cvs.font=f+' Pretendard, sans-serif'; return cvs.measureText(t).width; };
-const hit=(a,b,g)=>a.l<b.r+g&&a.r>b.l-g&&a.t<b.b+g&&a.b>b.t-g;
+// 겹침 판정: 네모끼리는 네모로, 동그라미(핀·숫자 원)가 끼면 동그라미로(빈 모서리는 자리로 인정)
+const hitR=(a,b,g)=>a.l<b.r+g&&a.r>b.l-g&&a.t<b.b+g&&a.b>b.t-g;
+const hitCR=(c,b,g)=>{ const dx=c.cx-Math.max(b.l,Math.min(c.cx,b.r)), dy=c.cy-Math.max(b.t,Math.min(c.cy,b.b)); return dx*dx+dy*dy<(c.cr+g)*(c.cr+g); };
+const hit=(a,b,g)=>{ if(!hitR(a,b,g)) return false; if(a.cr!=null&&b.cr!=null) return Math.hypot(a.cx-b.cx,a.cy-b.cy)<a.cr+b.cr+g; if(a.cr!=null) return hitCR(a,b,g); if(b.cr!=null) return hitCR(b,a,g); return true; };
 const FT=()=>BIG?{n:'700 12.5px',s:'500 10.5px',R:14,h:30}:{n:'700 11.5px',s:'500 10px',R:13.5,h:28};
-const MERGE=44, HALO=46, FAR=260;   // 묶음 퍼짐 상한, 범위 원 상한, 이보다 많이 보이면 숫자 원(격자)
+const MERGE=44, HALO=46, FAR=260, SL=12;   // 묶음 퍼짐 상한, 범위 원 상한, 이보다 많이 보이면 숫자 원(격자)
 let OV=[], openSt=null, cardOv=null, cardPin=null;
 function area(){ const m=document.getElementById('map'), mw=document.querySelector('.mapwrap').getBoundingClientRect(), pa=document.getElementById('panel').getBoundingClientRect();
   return {W:m.clientWidth, top:0, bot:innerWidth<=820?Math.min(mw.height,pa.top-mw.top):mw.height}; }
@@ -971,28 +975,33 @@ function drawOdt(){
   const B=inBox(), A=area(), pj=map.getProjection(), pts=[];
   for(const r of src){ if(r.y>B.n||r.y<B.s||r.x<B.w||r.x>B.e) continue; const p=pj.containerPointFromCoords(new K.LatLng(r.y,r.x)); pts.push({r,x:p.x,y:p.y}); }
   if(!pts.length) return;
-  const F=FT(), mw=document.querySelector('.mapwrap').getBoundingClientRect(), ui=[...document.querySelectorAll('.pill,.status,.ctrls,.cbtn:not([hidden]),.cats:not([hidden]),.fakebar')].map(el=>{const r=el.getBoundingClientRect(); return {l:r.left-mw.left,t:r.top-mw.top,r:r.right-mw.left,b:r.bottom-mw.top};});
-  const pb=(x,y,r)=>({l:x-r,t:y-r,r:x+r,b:y+r});
+  const F=FT(), mw=document.querySelector('.mapwrap').getBoundingClientRect(), ui=[...document.querySelectorAll('.pill,.status,.ctrls,.cbtn:not([hidden]),.cats:not([hidden]) .ccol:not([hidden]),.fakebar')].map(el=>el.getBoundingClientRect()).filter(r=>r.width&&r.height).map(r=>({l:r.left-mw.left,t:r.top-mw.top,r:r.right-mw.left,b:r.bottom-mw.top}));   // 분류는 열마다 실제 크기로(짧은 소분류 열 아래는 빈자리)
+  const pb=(x,y,r)=>({l:x-r,t:y-r,r:x+r,b:y+r}), pcir=(x,y,r)=>({l:x-r,t:y-r,r:x+r,b:y+r,cx:x,cy:y,cr:r});
   // 핀 옆 상호 자리 찾기(아래→오른쪽→왼쪽→위). 다른 핀·묶음·상호·화면 위 버튼과 겹치면 다음 자리, 다 막히면 null
   const spot=(x,y,name,sub,O)=>{ const w=Math.max(tw(name,F.n),sub?tw(sub,F.s):0)+4, h=sub?F.h:F.h-12, d=F.R+2;
     const C={b:{l:x-w/2,t:y+d,r:x+w/2,b:y+d+h},r:{l:x+d+1,t:y-h/2,r:x+d+1+w,b:y+h/2},l:{l:x-d-1-w,t:y-h/2,r:x-d-1,b:y+h/2},t:{l:x-w/2,t:y-d-h,r:x+w/2,b:y-d}};
-    for(const k of ['b','r','l','t']){ const c=C[k]; if(c.l<2||c.r>A.W-2||c.b>A.bot||c.t<A.top) continue; if(!O.some(o=>hit(o,c,3))&&!ui.some(o=>hit(o,c,2))) return {k,c}; } return null; };
+    // 가운데가 막히면 위·아래 상호를 옆으로 밀어 봄(핀은 상호 끝 바로 밑/위에 남게: 상호 끝이 핀 가장자리에서 12px)
+    if(w/2>SL){ C.bR={l:x-SL,t:y+d,r:x-SL+w,b:y+d+h}; C.bL={l:x+SL-w,t:y+d,r:x+SL,b:y+d+h}; C.tR={l:x-SL,t:y-d-h,r:x-SL+w,b:y-d}; C.tL={l:x+SL-w,t:y-d-h,r:x+SL,b:y-d}; }
+    for(const k of ['b','r','l','t','bR','bL','tR','tL']){ if(!C[k]) continue; const c=C[k]; if(c.l<2||c.r>A.W-2||c.b>A.bot||c.t<A.top) continue; if(!O.some(o=>hit(o,c,3))&&!ui.some(o=>hit(o,c,2))) return {k,c}; } return null; };
   const pinEl=(r,lab,name,sub)=>{ const d=document.createElement('div'); d.className='mp '+stCls(r); d.innerHTML=pinHTML(iconOf(r,S),'',1,lab,name,sub); d.querySelector('.pc').addEventListener('click',ev=>{ev.stopPropagation(); openAny(r);}); return d; };
   if(pts.length>FAR){ // 멀리: 격자 72px 숫자 원. 누르면 세로 목록 + 지도 확대. 혼자 있는 곳은 핀+상호(짧게)
     // 상호 놓을 자리가 없는 핀은 72px 안의 가장 가까운 숫자 원에 합침(원 자리는 그대로, 숫자만 +1). 원이 없으면 그런 핀끼리 새 원
     const G={}, cell=72; pts.forEach(p=>{ const k=Math.floor(p.x/cell)+','+Math.floor(p.y/cell); (G[k]=G[k]||[]).push(p); });
     const singles=[], boxes=[], circ=[];
     const mkC=g=>{ const n=g.length, sz=Math.min(50,28+Math.log2(n)*3.2), px=g.reduce((s,p)=>s+p.x,0)/n, py=g.reduce((s,p)=>s+p.y,0)/n;
-      const c={g,px,py,y:g.reduce((s,p)=>s+p.r.y,0)/n,x:g.reduce((s,p)=>s+p.r.x,0)/n,bx:pb(px,py,sz/2+3)}; circ.push(c); boxes.push(c.bx); return c; };
-    Object.values(G).forEach(g=>{ if(g.length===1){ const bx=pb(g[0].x,g[0].y,F.R+1); singles.push(Object.assign(g[0],{bx})); boxes.push(bx); } else mkC(g); });
-    const cx=A.W/2, cy=(A.top+A.bot)/2, fail=[];
+      const c={g,px,py,y:g.reduce((s,p)=>s+p.r.y,0)/n,x:g.reduce((s,p)=>s+p.r.x,0)/n,bx:pcir(px,py,sz/2+3)}; circ.push(c); boxes.push(c.bx); return c; };
+    Object.values(G).forEach(g=>{ if(g.length===1){ const bx=pcir(g[0].x,g[0].y,F.R+1); singles.push(Object.assign(g[0],{bx})); boxes.push(bx); } else mkC(g); });
+    const cx=A.W/2, cy=(A.top+A.bot)/2, fail=[], placed=[];
     singles.sort((a,b)=>Math.hypot(a.x-cx,a.y-cy)-Math.hypot(b.x-cx,b.y-cy)).forEach(p=>{ const r=p.r, name=cut(r.n,8), sub=r.gas!=null?gasSub(r).replace(/^\S+\s/,''):'';
       const sp=spot(p.x,p.y,name,sub,boxes.filter(o=>o!==p.bx));
-      if(sp){ boxes.push(sp.c); put(r,pinEl(r,sp.k,name,sub),3,true); } else { boxes.splice(boxes.indexOf(p.bx),1); fail.push(p); } });
+      if(sp){ boxes.push(sp.c); placed.push({p,k:sp.k,name,sub}); } else { boxes.splice(boxes.indexOf(p.bx),1); fail.push(p); } });
     const near=(p,arr,f)=>{ let b=null,bd=cell+.01; arr.forEach(c=>{ if(c===p) return; const d=Math.hypot(f(c).x-p.x,f(c).y-p.y); if(d<bd){bd=d;b=c;} }); return b; };
     const left=[]; fail.forEach(p=>{ const c=near(p,circ,c=>({x:c.px,y:c.py})); if(c) c.g.push(p); else left.push(p); });
     let lone=0; const used=new Set(); left.forEach(p=>{ if(used.has(p)) return; const q=near(p,left.filter(x=>!used.has(x)),x=>x);
-      if(q){ used.add(p); used.add(q); mkC([p,q]); } else { used.add(p); lone++; put(p.r,pinEl(p.r,null,'',''),3,true); } });   // 정말 혼자면 핀만(드묾)
+      if(q){ used.add(p); used.add(q); mkC([p,q]); return; } used.add(p);
+      const o=near(p,placed,x=>x.p); if(o){ placed.splice(placed.indexOf(o),1); mkC([p,o.p]); return; }   // 상호 붙은 옆 핀과 합쳐 '2'
+      lone++; put(p.r,pinEl(p.r,null,'',''),3,true); });   // 정말 혼자면 핀만(드묾)
+    placed.forEach(o=>put(o.p.r,pinEl(o.p.r,o.k,o.name,o.sub),3,true));
     circ.forEach(c=>{ const g=c.g, n=g.length, sz=Math.min(50,28+Math.log2(n)*3.2), d=document.createElement('div'); d.className='mcw';
       d.innerHTML=`<div class="mc" style="--d:${sz}px">${n>=1000?(n/1000).toFixed(1)+'천':n}</div>`;
       d.firstChild.addEventListener('click',ev=>{ ev.stopPropagation(); if(openSt&&openSt.el===d) return closeStack(); collapse(); openStack(d,g.map(p=>p.r),new K.LatLng(c.y,c.x),sz/2+6); }); put({x:c.x,y:c.y},d,4,true); });
@@ -1003,7 +1012,7 @@ function drawOdt(){
   const pins=Object.values(by).map(g=>({x:g[0].x,y:g[0].y,rows:g.map(p=>p.r)}));
   const cx=A.W/2, cy=(A.top+A.bot)/2, out=[];
   pins.sort((a,b)=>Math.hypot(a.x-cx,a.y-cy)-Math.hypot(b.x-cx,b.y-cy)).forEach(p=>{
-    const O=out.flatMap(m=>m.boxes), box=pb(p.x,p.y,F.R+1), r0=p.rows[0], bld=p.rows.length>1;
+    const O=out.flatMap(m=>m.boxes), r0=p.rows[0], bld=p.rows.length>1, box=bld?pb(p.x,p.y,F.R+1):pcir(p.x,p.y,F.R+1);
     const name=bld?(r0.a.split(' ').slice(1).join(' ').split(',')[0]):r0.n, sub=bld?`${p.rows.length}곳`:subOf(r0,S);
     if(!O.some(o=>hit(o,box,1))){ const sp=spot(p.x,p.y,name,sub,O);
       if(sp){ out.push({type:bld?'bld':'one',x:p.x,y:p.y,rows:p.rows,lab:sp.k,name,sub,boxes:[box,sp.c]}); return; } }
