@@ -963,7 +963,7 @@ function markersFor(){
       Object.assign(b,{n:8,icon:'buildings',st:'ok',name:'봉명프라자',subTxt:'8곳',shops:fakeShops(subs,8,true)}); }
     const ms=layout(pins,A); drawMarkers(ms);
     if(big){ big.big=true; const d=document.createElement('div'); d.className='mp big st-prep'; d.innerHTML=pinHTML(big); put(big.x,big.y,d,9); card(big); }
-    if(S===11){ const mid=(A.top+A.bot)/2, g=ms.filter(m=>m.type==='grp'&&m.y<mid&&m.x<A.W*.6).sort((a,b)=>b.items.length-a.items.length||a.y-b.y)[0]; if(g) openStack(g.el,g.items,true,g.el.querySelector('.gp').offsetWidth/2+6); }
+    if(S===11){ const mid=(A.top+A.bot)/2, g=ms.filter(m=>m.type==='grp'&&m.y>A.top+(A.bot-A.top)*.28&&m.y<mid+20&&m.x<A.W*.6).sort((a,b)=>b.items.length-a.items.length||a.y-b.y)[0]; if(g) openStack(g.el,g.items,true,g.el.querySelector('.gp').offsetWidth/2+6); }
     if(S===12){ const b=ms.find(m=>m.type==='bld'); if(b) openStack(b.el,b.items[0].shops,false,20); }
   }
   if(S===9){ // 멀리: 숫자 원(격자 72px). 누르면 세로 목록 + 지도 확대 버튼
@@ -996,7 +996,7 @@ function apply(){
   const gas=S===4;
   if(!gas){ visible=function(){return false}; renderList=function(){}; render(); }
   else { ['ok','no','check'].forEach(c=>{ imgs[c]=gasPin(c); imgsBig[c]=gasPin(c,true); }); markers.forEach((m,i)=>m.setImage(imgFor(i))); }
-  const c=gas?{y:36.3580,x:127.3420,l:7}:S===9?{y:36.3560,x:127.3700,l:7}:{y:36.3530,x:127.3418,l:4};
+  const c=gas?{y:36.3580,x:127.3420,l:7}:S===9?{y:36.3560,x:127.3650,l:6}:{y:36.3530,x:127.3418,l:4};
   map.setLevel(c.l); map.setCenter(new K.LatLng(c.y,c.x));
   if(S===5||S===7) setPanel(true);
   if(S===6){ const st=document.querySelector('.status').getBoundingClientRect(); document.getElementById('panel').style.height=(innerHeight-st.bottom-8)+'px'; document.getElementById('q').value='빵'; document.getElementById('scope').classList.add('off'); }
@@ -1005,7 +1005,7 @@ function apply(){
     sg.addEventListener('click',ev=>{ const b=ev.target.closest('button'); if(b){ sg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); } }); }
   else { document.getElementById('list').innerHTML=LIST[S]||''; document.getElementById('count').textContent=COUNT[S]||''; }
   K.event.addListener(map,'dragstart',()=>{ if(U.open){ U.open=false; draw(); } });
-  setTimeout(()=>{ fit(); if(!gas) markersFor(); },450);
+  setTimeout(()=>{ fit(); if(!gas) markersFor(); },S===9?1600:600);
   addEventListener('resize',fit);
 }
 // ---- 크기 버튼(지도 바꾸기 위) ----
