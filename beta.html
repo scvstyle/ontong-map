@@ -979,16 +979,24 @@ function drawOdt(){
     for(const k of ['b','r','l','t']){ const c=C[k]; if(c.l<2||c.r>A.W-2||c.b>A.bot||c.t<A.top) continue; if(!O.some(o=>hit(o,c,3))&&!ui.some(o=>hit(o,c,2))) return {k,c}; } return null; };
   const pinEl=(r,lab,name,sub)=>{ const d=document.createElement('div'); d.className='mp '+stCls(r); d.innerHTML=pinHTML(iconOf(r,S),'',1,lab,name,sub); d.querySelector('.pc').addEventListener('click',ev=>{ev.stopPropagation(); openAny(r);}); return d; };
   if(pts.length>FAR){ // 멀리: 격자 72px 숫자 원. 누르면 세로 목록 + 지도 확대. 혼자 있는 곳은 핀+상호(짧게)
+    // 상호 놓을 자리가 없는 핀은 72px 안의 가장 가까운 숫자 원에 합침(원 자리는 그대로, 숫자만 +1). 원이 없으면 그런 핀끼리 새 원
     const G={}, cell=72; pts.forEach(p=>{ const k=Math.floor(p.x/cell)+','+Math.floor(p.y/cell); (G[k]=G[k]||[]).push(p); });
-    const singles=[], boxes=[];
-    Object.values(G).forEach(g=>{ if(g.length===1){ const bx=pb(g[0].x,g[0].y,F.R+1); singles.push(Object.assign(g[0],{bx})); boxes.push(bx); return; }
-      const y=g.reduce((s,p)=>s+p.r.y,0)/g.length, x=g.reduce((s,p)=>s+p.r.x,0)/g.length, n=g.length, sz=Math.min(50,28+Math.log2(n)*3.2);
-      const px=g.reduce((s,p)=>s+p.x,0)/n, py=g.reduce((s,p)=>s+p.y,0)/n; boxes.push(pb(px,py,sz/2+3));
-      const d=document.createElement('div'); d.className='mcw'; d.innerHTML=`<div class="mc" style="--d:${sz}px">${n>=1000?(n/1000).toFixed(1)+'천':n}</div>`;
-      d.firstChild.addEventListener('click',ev=>{ ev.stopPropagation(); if(openSt&&openSt.el===d) return closeStack(); collapse(); openStack(d,g.map(p=>p.r),new K.LatLng(y,x),sz/2+6); }); put({x,y},d,4,true); });
-    const cx=A.W/2, cy=(A.top+A.bot)/2;
+    const singles=[], boxes=[], circ=[];
+    const mkC=g=>{ const n=g.length, sz=Math.min(50,28+Math.log2(n)*3.2), px=g.reduce((s,p)=>s+p.x,0)/n, py=g.reduce((s,p)=>s+p.y,0)/n;
+      const c={g,px,py,y:g.reduce((s,p)=>s+p.r.y,0)/n,x:g.reduce((s,p)=>s+p.r.x,0)/n,bx:pb(px,py,sz/2+3)}; circ.push(c); boxes.push(c.bx); return c; };
+    Object.values(G).forEach(g=>{ if(g.length===1){ const bx=pb(g[0].x,g[0].y,F.R+1); singles.push(Object.assign(g[0],{bx})); boxes.push(bx); } else mkC(g); });
+    const cx=A.W/2, cy=(A.top+A.bot)/2, fail=[];
     singles.sort((a,b)=>Math.hypot(a.x-cx,a.y-cy)-Math.hypot(b.x-cx,b.y-cy)).forEach(p=>{ const r=p.r, name=cut(r.n,8), sub=r.gas!=null?gasSub(r).replace(/^\S+\s/,''):'';
-      const sp=spot(p.x,p.y,name,sub,boxes.filter(o=>o!==p.bx)); if(sp) boxes.push(sp.c); put(r,pinEl(r,sp&&sp.k,name,sub),3,true); });
+      const sp=spot(p.x,p.y,name,sub,boxes.filter(o=>o!==p.bx));
+      if(sp){ boxes.push(sp.c); put(r,pinEl(r,sp.k,name,sub),3,true); } else { boxes.splice(boxes.indexOf(p.bx),1); fail.push(p); } });
+    const near=(p,arr,f)=>{ let b=null,bd=cell+.01; arr.forEach(c=>{ if(c===p) return; const d=Math.hypot(f(c).x-p.x,f(c).y-p.y); if(d<bd){bd=d;b=c;} }); return b; };
+    const left=[]; fail.forEach(p=>{ const c=near(p,circ,c=>({x:c.px,y:c.py})); if(c) c.g.push(p); else left.push(p); });
+    let lone=0; const used=new Set(); left.forEach(p=>{ if(used.has(p)) return; const q=near(p,left.filter(x=>!used.has(x)),x=>x);
+      if(q){ used.add(p); used.add(q); mkC([p,q]); } else { used.add(p); lone++; put(p.r,pinEl(p.r,null,'',''),3,true); } });   // 정말 혼자면 핀만(드묾)
+    circ.forEach(c=>{ const g=c.g, n=g.length, sz=Math.min(50,28+Math.log2(n)*3.2), d=document.createElement('div'); d.className='mcw';
+      d.innerHTML=`<div class="mc" style="--d:${sz}px">${n>=1000?(n/1000).toFixed(1)+'천':n}</div>`;
+      d.firstChild.addEventListener('click',ev=>{ ev.stopPropagation(); if(openSt&&openSt.el===d) return closeStack(); collapse(); openStack(d,g.map(p=>p.r),new K.LatLng(c.y,c.x),sz/2+6); }); put({x:c.x,y:c.y},d,4,true); });
+    window.__far={single:singles.length,fail:fail.length,pair:left.length-lone,lone};   // 시험용
     return; }
   // 같은 좌표 = 같은 건물 → 네모 핀 하나
   const by={}; pts.forEach(p=>{ const k=p.r.x+','+p.r.y; (by[k]=by[k]||[]).push(p); });
