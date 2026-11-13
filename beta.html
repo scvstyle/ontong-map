@@ -189,9 +189,14 @@ if(!/^#ops-/.test(location.hash)){var cf=document.createElement('script');cf.def
 .rb{padding:0 13px 0 10px;font-weight:600;height:32px}
 .rb .rd{width:15px;height:15px;border-radius:50%;border:1.5px solid #c4cad1;flex:none;box-sizing:border-box}
 .rb.on{border-color:#0B6F63;color:#0B6F63;font-weight:700} .rb.on .rd{border:4.5px solid #0B6F63}
-.cbtn{padding:0 9px 0 10px;margin-left:0;pointer-events:auto}
+/* 분류 버튼(접혔을 때): 제목 칩만큼 넓고 초록 굵은 테두리 — '눌러 보고 싶게' */
+.cbtn{padding:0 6px 0 11px;margin-left:0;pointer-events:auto;box-sizing:border-box;border:2px solid #0B6F63!important;color:#0B6F63!important;gap:7px!important;box-shadow:0 2px 10px rgba(11,111,99,.28)}
 .cbtn[hidden]{display:none}
-.cbtn i{font-style:normal;min-width:18px;height:18px;border-radius:9px;background:#0B6F63;color:#fff;font:700 11px/18px Pretendard,sans-serif;text-align:center;padding:0 5px}
+.cbtn b{font-weight:800;letter-spacing:-.3px}
+.cbtn i{font-style:normal;margin-left:auto;height:22px;border-radius:11px;background:#0B6F63;color:#fff;font:700 11.5px/22px Pretendard,sans-serif;padding:0 8px;white-space:nowrap}
+.cbtn svg{stroke-width:2.3!important}
+.cbtn.pulse{animation:cpulse 1.25s ease-out 2}
+@keyframes cpulse{0%{box-shadow:0 0 0 0 rgba(11,111,99,.55),0 2px 10px rgba(11,111,99,.28)}100%{box-shadow:0 0 0 12px rgba(11,111,99,0),0 2px 10px rgba(11,111,99,.28)}}
 /* 캐시백 칩 4번째: 준비 중 */
 .dot.prep{background:#fff;border:2px solid #8a939e;box-sizing:border-box}
 /* 리스트 */
@@ -221,11 +226,11 @@ if(!/^#ops-/.test(location.hash)){var cf=document.createElement('script');cf.def
 .mp .pc em{position:absolute;top:-8px;right:-9px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:#1b1f24;color:#fff;font:700 10.5px/14px Pretendard,sans-serif;font-style:normal;border:1.5px solid #fff;box-sizing:border-box;text-align:center}
 .mp.bld.open .pc{box-shadow:0 0 0 4px rgba(27,31,36,.2),0 2px 6px rgba(0,0,0,.3)}
 /* 상호 */
-.pl{position:absolute;white-space:nowrap;line-height:1.15;text-align:center;pointer-events:none;text-shadow:-1px -1px 0 #fff,1px -1px 0 #fff,-1px 1px 0 #fff,1px 1px 0 #fff,0 0 3px #fff,0 0 3px #fff}
-.pl b{display:block;font:700 11.5px/1.2 Pretendard,sans-serif;color:#1b1f24;letter-spacing:-.2px}
-.pl small{display:block;font:500 10px/1.2 Pretendard,sans-serif;color:#6b7480}
-.pl-b{left:0;top:15px;transform:translateX(-50%)} .pl-t{left:0;bottom:15px;transform:translateX(-50%)}
-.pl-r{left:16px;top:0;transform:translateY(-50%);text-align:left} .pl-l{right:16px;top:0;transform:translateY(-50%);text-align:right}
+.mp .pl{position:absolute;white-space:nowrap;line-height:1.15;text-align:center;pointer-events:none;text-shadow:-1px -1px 0 #fff,1px -1px 0 #fff,-1px 1px 0 #fff,1px 1px 0 #fff,0 0 3px #fff,0 0 3px #fff}
+.mp .pl b{display:block;font:700 11.5px/1.2 Pretendard,sans-serif;color:#1b1f24;letter-spacing:-.2px}
+.mp .pl small{display:block;font:500 10px/1.2 Pretendard,sans-serif;color:#6b7480}
+.mp .pl-b{left:0;top:15px;transform:translateX(-50%)} .mp .pl-t{left:0;bottom:15px;transform:translateX(-50%)}
+.mp .pl-r{left:16px;top:0;transform:translateY(-50%);text-align:left} .mp .pl-l{right:16px;top:0;transform:translateY(-50%);text-align:right}
 /* 숫자 원 */
 .mc{width:var(--d);height:var(--d);border-radius:50%;background:rgba(27,31,36,.86);color:#fff;font:700 13px/1 Pretendard,sans-serif;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-sizing:border-box;box-shadow:0 0 0 4px rgba(27,31,36,.16),0 2px 6px rgba(0,0,0,.25)}
 /* 같은 건물 펼침: 세로 줄, 5개까지 보이고 나머지는 줄 안에서 끌기 */
@@ -238,8 +243,8 @@ if(!/^#ops-/.test(location.hash)){var cf=document.createElement('script');cf.def
 /* 주유 핀이 커져서 가격 말풍선을 조금 더 띄움 */
 .lb-t{top:-15px} .lb-b{top:15px} .lb-r{left:16px} .lb-l{left:-16px}
 /* ===== 미니판(작은 폰) ===== */
-body.mini .gb,body.mini .cbtn{height:30px;font-size:12px;gap:5px} body.mini .gb{padding:0 10px 0 8px}
-body.mini .gb svg,body.mini .cbtn svg{width:15px;height:15px}
+body.mini .gb{height:30px;font-size:12px;gap:5px} body.mini .cbtn{height:36px;font-size:13.5px} body.mini .gb{padding:0 10px 0 8px}
+body.mini .gb svg{width:15px;height:15px} body.mini .cbtn svg{width:18px;height:18px}
 body.mini .sb,body.mini .rb{height:28px;font-size:12px} body.mini .sb{padding:0 10px 0 4px} body.mini .rb{padding:0 10px 0 8px}
 body.mini .sb .ck{width:20px;height:20px} body.mini .sb .ck svg{width:12px;height:12px} body.mini .rb .rd{width:13px;height:13px}
 body.mini .ccol{gap:5px;padding:2px 3px 10px} body.mini .cats{gap:2px}
@@ -262,7 +267,7 @@ body.mini .chip{font-size:11.5px;padding:5px 9px;gap:5px} body.mini .status{gap:
 /* 크기 버튼 */
 #szb{flex-direction:column;gap:1px;color:var(--ink)} #szb b{font:800 15px/1 Pretendard,sans-serif} #szb small{font:600 8.5px/1 Pretendard,sans-serif;color:var(--sub)}
 /* ===== 크게 보기(어르신용): 미니보다 한 단계 큼 ===== */
-body.big .gb,body.big .cbtn{height:36px;font-size:13.5px;gap:6px} body.big .gb{padding:0 13px 0 10px} body.big .gb svg,body.big .cbtn svg{width:17px;height:17px}
+body.big .gb{height:36px;font-size:13.5px;gap:6px} body.big .cbtn{height:42px;font-size:15px} body.big .cbtn i{height:25px;line-height:25px;font-size:13px;border-radius:13px} body.big .gb{padding:0 13px 0 10px} body.big .gb svg{width:17px;height:17px} body.big .cbtn svg{width:20px;height:20px}
 body.big .sb,body.big .rb{height:34px;font-size:13.5px} body.big .sb{padding:0 12px 0 5px} body.big .sb .ck{width:24px;height:24px} body.big .sb .ck svg{width:14px;height:14px}
 body.big .rb .rd{width:16px;height:16px} body.big .ccol{gap:6px}
 body.big .chip{font-size:13px;padding:7px 12px} body.big .chip .dot{width:10px;height:10px} body.big .status{gap:6px}
@@ -270,11 +275,11 @@ body.big .search input{font-size:15px} body.big .scope button,body.big .count,bo
 body.big .item .nm{font-size:15.5px} body.big .item .cg,body.big .item .ad{font-size:13px} body.big .item .ds{font-size:13px} body.big .item .badge{font-size:12px}
 body.big .empty,body.big .sec,body.big .nores,body.big .morebtn{font-size:13.5px}
 body.big .card{font-size:14px} body.big .card h3{font-size:17px} body.big .card .cg{font-size:13.5px}
-body.big .pl b{font-size:12.5px} body.big .pl small{font-size:10.5px}
+body.big .mp .pl b{font-size:12.5px} body.big .mp .pl small{font-size:10.5px}
 body.big .mp .pc{width:28px;height:28px} body.big .mp .pc svg{width:16px;height:16px}
 body.big .bi{height:33px;font-size:13.5px} body.big .bsc{max-height:197px}
 
-.fakebar{position:fixed;left:50%;top:54px;transform:translateX(-50%);z-index:60;background:#e5484d;color:#fff;font:700 11.5px/1 Pretendard,sans-serif;padding:6px 10px;border-radius:999px;pointer-events:none;white-space:nowrap}
+.fakebar{align-self:flex-end;margin-top:2px;background:#e5484d;color:#fff;font:700 11.5px/1 Pretendard,sans-serif;padding:6px 10px;border-radius:999px;pointer-events:none;white-space:nowrap}
 .item .pr2{grid-row:1 / span 3;grid-column:3;text-align:right;align-self:center;white-space:nowrap} .item .pr2 b{font-size:15px} .item .pr2 small{font-size:12px;color:var(--sub)} .item .pr2 i{display:block;font-style:normal;font-size:12px;color:var(--sub)}
 </style>
 </head>
@@ -837,6 +842,10 @@ const U=Object.assign({sel:[],subs:{},all:{},fuel:null},LSG('cat')||{}); U.cur=n
 const saveU=()=>LSS('cat',{sel:U.sel,subs:U.subs,all:U.all,fuel:U.fuel});
 const gasOn=()=>U.sel.includes(GAS)&&!!U.fuel;
 if(U.fuel) state.fuel=U.fuel;
+// 소분류가 하나도 없는 대분류는 '지금 보고 있는' 것 말고는 선택에서 뺌(연한 청록 안 남게)
+const hasSub=g=>g===GAS?!!U.fuel:!!(U.all[g]||(U.subs[g]||[]).length);
+const prune=()=>{ U.sel=U.sel.filter(g=>g===U.cur||hasSub(g)); };
+prune();
 
 // ---- 데이터: 대분류별 파일을 고를 때 불러옴 ----
 let META=null; const ROWS={}, LOADING={};
@@ -849,7 +858,15 @@ const subName=id=>META.subs[id][1], grpName=id=>META.groups[META.subs[id][0]];
 const catLine=r=>r.s.map(id=>`${e(grpName(id))}<s>›</s>${e(subName(id))}`).join('<s>·</s>');
 function rowsActive(){ const S=activeSubs(), out=[]; if(!S.size) return out;
   for(const i in ROWS){ for(const r of ROWS[i]) if(r.s.some(id=>S.has(id))) out.push(r); } return out; }
-const iconOf=(r,S)=>{ const id=(S&&r.s.find(x=>S.has(x)))??r.s[0]; return SICON[subName(id)]||'dots'; };
+const iconOf=(r,S)=>{ if(r.gas!=null) return 'gas-station'; const id=(S&&r.s.find(x=>S.has(x)))??r.s[0]; return SICON[subName(id)]||'dots'; };
+// 주유소를 다른 업종과 같이 고르면: 주유소도 같은 묶음에 넣음(혼자 남으면 핀+상호+가격). 주유만이면 기존 가격 말풍선 방식
+const mixed=()=>gasOn()&&state.prep&&activeSubs().size>0;
+const gasRows=()=>DATA.map((p,i)=>visible(p)?{n:p.n,a:p.a.replace(/^대전(광역시)?\s*/,''),x:p.x,y:p.y,s:[],gas:i,c:p.c}:null).filter(Boolean);
+const stCls=r=>r.gas!=null?'st-'+r.c:'st-prep';
+const gasSub=r=>{ const v=priceOf(DATA[r.gas]); return v?`${FUEL[state.fuel]} ${won(v.v)}원`:'주유·충전'; };
+const subOf=(r,S)=>r.gas!=null?gasSub(r):subName(r.s.find(x=>S.has(x))??r.s[0]);
+function openAny(r){ if(r.gas==null) return openRow(r,false); collapse(); closeStack(); openCard(r.gas,false); }
+const cut=(t,n)=>t.length>n?t.slice(0,n)+'…':t;
 
 // ---- 분류 화면 ----
 document.querySelector('.bar').style.display='none';
@@ -858,7 +875,11 @@ const cats=document.createElement('div'); cats.className='cats'; cats.innerHTML=
 const cb=document.createElement('button'); cb.className='cbtn'; top.appendChild(cats); top.appendChild(cb);
 function draw(){
   cats.hidden=!U.open; cb.hidden=U.open;
-  cb.innerHTML=`${ic('adjustments-horizontal')}분류${U.sel.length?`<i>${U.sel.length}</i>`:''}`;
+  // 분류 버튼: '분류 선택' + 요약(대분류 1개: '쇼핑 · 3', 여러 개: '쇼핑 외 1 · 4', '전체'는 그 대분류 소분류 수로 셈)
+  const eff=U.sel.filter(hasSub), nSub=eff.reduce((s,g)=>s+(g===GAS?1:U.all[g]?SUBN[g].length:U.subs[g].length),0);
+  const sum=!eff.length?'':eff.length===1&&eff[0]===GAS?`${GAS} · ${FUELS.find(f=>f[0]===U.fuel)[1]}`:eff.length===1&&U.all[eff[0]]?`${eff[0]} · 전체`:`${eff[0]}${eff.length>1?` 외 ${eff.length-1}`:''} · ${nSub}`;
+  cb.innerHTML=`${ic('adjustments-horizontal')}<b>분류 선택</b>${sum?`<i>${e(sum)}</i>`:''}`;
+  const pw=document.querySelector('.pill'); if(pw&&pw.offsetWidth) cb.style.minWidth=pw.offsetWidth+'px';
   document.getElementById('gcol').innerHTML=CATS.map(([g])=>`<button class="gb${U.sel.includes(g)?(U.cur===g?' cur':' on'):''}" data-g="${e(g)}">${ic(GI[g])}${e(g)}</button>`).join('');
   const sc=document.getElementById('scol'); sc.hidden=!U.cur;
   if(U.cur===GAS) sc.innerHTML=FUELS.map(([k,n])=>`<button class="rb${U.fuel===k?' on':''}" data-f="${k}"><span class="rd"></span>${n}</button>`).join('');
@@ -877,11 +898,13 @@ cats.addEventListener('click',ev=>{ ev.stopPropagation();
     if(!n) U.all[g0]=!U.all[g0];
     else if(U.all[g0]){ const i=on.indexOf(n); if(i>=0) on.splice(i,1); else { U.all[g0]=false; on.push(n); } }  // 흐린 것 → 기억에서 해제 / 체크 안 된 것 → '전체' 끄고 켬
     else { const i=on.indexOf(n); if(i<0) on.push(n); else on.splice(i,1); } }
-  if(r){ U.fuel=r.dataset.f; state.fuel=U.fuel; savePref(); }
+  if(r){ U.fuel=U.fuel===r.dataset.f?null:r.dataset.f; if(U.fuel){ state.fuel=U.fuel; savePref(); } }   // 같은 유종 다시 누르면 해제
+  prune();
   const sv=document.getElementById('scol').scrollTop; saveU(); draw(); if(s) document.getElementById('scol').scrollTop=sv; if(scrollKeep!=null) document.getElementById('gcol').scrollTop=scrollKeep;
   if(g||s||r){ closeCard(); ensure(U.sel.filter(x=>x!==GAS)).then(refresh); refresh(); } });
 cb.addEventListener('click',ev=>{ ev.stopPropagation(); U.open=true; closeCard(); draw(); });
-const collapse=()=>{ if(U.open){ U.open=false; draw(); } };
+let pulsed=false;   // 처음 접힐 때 한 번만 분류 버튼을 살짝 깜빡여 눈에 띄게
+const collapse=()=>{ if(U.open){ U.open=false; draw(); if(!pulsed){ pulsed=true; cb.classList.add('pulse'); setTimeout(()=>cb.classList.remove('pulse'),2600); } } };
 
 // ---- 캐시백 칩 4번째: 준비 중 ----
 if(!PREF_KEYS.includes('prep')) PREF_KEYS.push('prep');
@@ -917,9 +940,9 @@ function closeStack(){ if(openSt){ if(openSt.host) openSt.host.style.zIndex=open
 function openStack(el,items,zoomTo,left){ closeStack(); const S=activeSubs(), c=map.getCenter(), cy=la(c), cx=lo(c);
   const list=[...items].sort((a,b)=>dist2(a,cy,cx)-dist2(b,cy,cx));   // 지금은 모두 '준비 중' → 가까운 순(시 자료 오면 켜진 칩 우선)
   const st=document.createElement('div'); st.className='bst'; st.style.left=left+'px';
-  st.innerHTML=`<div class="bsc">${list.map((r,i)=>`<button class="bi" data-i="${i}"><span class="mp sm st-prep"><span class="pc">${ic(iconOf(r,S))}</span></span>${e(r.n)}</button>`).join('')}</div>`+(zoomTo?`<button class="bz">${ic('zoom')}지도 확대해서 보기</button>`:'');
+  st.innerHTML=`<div class="bsc">${list.map((r,i)=>`<button class="bi" data-i="${i}"><span class="mp sm ${stCls(r)}"><span class="pc">${ic(iconOf(r,S))}</span></span>${e(r.n)}</button>`).join('')}</div>`+(zoomTo?`<button class="bz">${ic('zoom')}지도 확대해서 보기</button>`:'');
   const sc=st.firstChild; sc.addEventListener('scroll',()=>mask(sc),{passive:true});
-  st.addEventListener('click',ev=>{ ev.stopPropagation(); const b=ev.target.closest('.bi'); if(b){ openRow(list[+b.dataset.i],false); return; }
+  st.addEventListener('click',ev=>{ ev.stopPropagation(); const b=ev.target.closest('.bi'); if(b){ openAny(list[+b.dataset.i]); return; }
     if(ev.target.closest('.bz')){ closeStack(); map.setLevel(Math.max(1,map.getLevel()-2),{animate:true}); map.panTo(zoomTo); } });
   el.appendChild(st); el.classList.add('open'); const pl=el.querySelector('.pl'); if(pl) pl.style.display='none';
   requestAnimationFrame(()=>mask(sc)); const host=el.parentElement, z=host?host.style.zIndex:''; if(host) host.style.zIndex='1000'; openSt={el,st,host,z}; }
@@ -928,30 +951,39 @@ function inBox(){ const A=area(), pj=map.getProjection(), a=pj.coordsFromContain
   return {n:Math.max(la(a),la(b)),s:Math.min(la(a),la(b)),w:Math.min(lo(a),lo(b)),e:Math.max(lo(a),lo(b))}; }
 function drawOdt(){
   if(!map||!map.getProjection||dragging) return; clearOv();
-  if(!state.prep) return;   // 지금 다른 업종은 모두 '준비 중'
-  const S=activeSubs(); if(!S.size) return;
+  const S=activeSubs(), M=mixed(), src=[...(state.prep&&S.size?rowsActive():[]),...(M?gasRows():[])];   // 지금 다른 업종은 모두 '준비 중'
+  if(!src.length) return;
   const B=inBox(), A=area(), pj=map.getProjection(), pts=[];
-  for(const r of rowsActive()){ if(r.y>B.n||r.y<B.s||r.x<B.w||r.x>B.e) continue; const p=pj.containerPointFromCoords(new K.LatLng(r.y,r.x)); pts.push({r,x:p.x,y:p.y}); }
+  for(const r of src){ if(r.y>B.n||r.y<B.s||r.x<B.w||r.x>B.e) continue; const p=pj.containerPointFromCoords(new K.LatLng(r.y,r.x)); pts.push({r,x:p.x,y:p.y}); }
   if(!pts.length) return;
-  if(pts.length>FAR){ // 멀리: 격자 72px 숫자 원. 누르면 세로 목록 + 지도 확대
+  const F=FT(), mw=document.querySelector('.mapwrap').getBoundingClientRect(), ui=[...document.querySelectorAll('.pill,.status,.ctrls,.cbtn:not([hidden]),.cats:not([hidden]),.fakebar')].map(el=>{const r=el.getBoundingClientRect(); return {l:r.left-mw.left,t:r.top-mw.top,r:r.right-mw.left,b:r.bottom-mw.top};});
+  const pb=(x,y,r)=>({l:x-r,t:y-r,r:x+r,b:y+r});
+  // 핀 옆 상호 자리 찾기(아래→오른쪽→왼쪽→위). 다른 핀·묶음·상호·화면 위 버튼과 겹치면 다음 자리, 다 막히면 null
+  const spot=(x,y,name,sub,O)=>{ const w=Math.max(tw(name,F.n),sub?tw(sub,F.s):0)+4, h=sub?F.h:F.h-12, d=F.R+2;
+    const C={b:{l:x-w/2,t:y+d,r:x+w/2,b:y+d+h},r:{l:x+d+1,t:y-h/2,r:x+d+1+w,b:y+h/2},l:{l:x-d-1-w,t:y-h/2,r:x-d-1,b:y+h/2},t:{l:x-w/2,t:y-d-h,r:x+w/2,b:y-d}};
+    for(const k of ['b','r','l','t']){ const c=C[k]; if(c.l<2||c.r>A.W-2||c.b>A.bot||c.t<A.top) continue; if(!O.some(o=>hit(o,c,3))&&!ui.some(o=>hit(o,c,2))) return {k,c}; } return null; };
+  const pinEl=(r,lab,name,sub)=>{ const d=document.createElement('div'); d.className='mp '+stCls(r); d.innerHTML=pinHTML(iconOf(r,S),'',1,lab,name,sub); d.querySelector('.pc').addEventListener('click',ev=>{ev.stopPropagation(); openAny(r);}); return d; };
+  if(pts.length>FAR){ // 멀리: 격자 72px 숫자 원. 누르면 세로 목록 + 지도 확대. 혼자 있는 곳은 핀+상호(짧게)
     const G={}, cell=72; pts.forEach(p=>{ const k=Math.floor(p.x/cell)+','+Math.floor(p.y/cell); (G[k]=G[k]||[]).push(p); });
-    Object.values(G).forEach(g=>{ const r0=g[0].r; if(g.length===1){ const d=document.createElement('div'); d.className='mp st-prep'; d.innerHTML=pinHTML(iconOf(r0,S)); d.addEventListener('click',ev=>{ev.stopPropagation(); openRow(r0,false);}); put(r0,d,3,true); return; }
+    const singles=[], boxes=[];
+    Object.values(G).forEach(g=>{ if(g.length===1){ const bx=pb(g[0].x,g[0].y,F.R+1); singles.push(Object.assign(g[0],{bx})); boxes.push(bx); return; }
       const y=g.reduce((s,p)=>s+p.r.y,0)/g.length, x=g.reduce((s,p)=>s+p.r.x,0)/g.length, n=g.length, sz=Math.min(50,28+Math.log2(n)*3.2);
+      const px=g.reduce((s,p)=>s+p.x,0)/n, py=g.reduce((s,p)=>s+p.y,0)/n; boxes.push(pb(px,py,sz/2+3));
       const d=document.createElement('div'); d.className='mcw'; d.innerHTML=`<div class="mc" style="--d:${sz}px">${n>=1000?(n/1000).toFixed(1)+'천':n}</div>`;
       d.firstChild.addEventListener('click',ev=>{ ev.stopPropagation(); if(openSt&&openSt.el===d) return closeStack(); collapse(); openStack(d,g.map(p=>p.r),new K.LatLng(y,x),sz/2+6); }); put({x,y},d,4,true); });
+    const cx=A.W/2, cy=(A.top+A.bot)/2;
+    singles.sort((a,b)=>Math.hypot(a.x-cx,a.y-cy)-Math.hypot(b.x-cx,b.y-cy)).forEach(p=>{ const r=p.r, name=cut(r.n,8), sub=r.gas!=null?gasSub(r).replace(/^\S+\s/,''):'';
+      const sp=spot(p.x,p.y,name,sub,boxes.filter(o=>o!==p.bx)); if(sp) boxes.push(sp.c); put(r,pinEl(r,sp&&sp.k,name,sub),3,true); });
     return; }
   // 같은 좌표 = 같은 건물 → 네모 핀 하나
   const by={}; pts.forEach(p=>{ const k=p.r.x+','+p.r.y; (by[k]=by[k]||[]).push(p); });
   const pins=Object.values(by).map(g=>({x:g[0].x,y:g[0].y,rows:g.map(p=>p.r)}));
-  const F=FT(), ui=[...document.querySelectorAll('.pill,.status,.ctrls,.cbtn:not([hidden]),.cats:not([hidden])')].map(el=>{const r=el.getBoundingClientRect(), m=document.querySelector('.mapwrap').getBoundingClientRect(); return {l:r.left-m.left,t:r.top-m.top,r:r.right-m.left,b:r.bottom-m.top};});
-  const cx=A.W/2, cy=(A.top+A.bot)/2, out=[], pb=(x,y,r)=>({l:x-r,t:y-r,r:x+r,b:y+r});
+  const cx=A.W/2, cy=(A.top+A.bot)/2, out=[];
   pins.sort((a,b)=>Math.hypot(a.x-cx,a.y-cy)-Math.hypot(b.x-cx,b.y-cy)).forEach(p=>{
     const O=out.flatMap(m=>m.boxes), box=pb(p.x,p.y,F.R+1), r0=p.rows[0], bld=p.rows.length>1;
-    const name=bld?(r0.a.split(' ').slice(1).join(' ').split(',')[0]):r0.n, sub=bld?`${p.rows.length}곳`:subName(r0.s.find(x=>S.has(x))??r0.s[0]);
-    if(!O.some(o=>hit(o,box,1))){
-      const w=Math.max(tw(name,F.n),tw(sub,F.s))+4, h=F.h, d=F.R+2;
-      const C={b:{l:p.x-w/2,t:p.y+d,r:p.x+w/2,b:p.y+d+h},r:{l:p.x+d+1,t:p.y-h/2,r:p.x+d+1+w,b:p.y+h/2},l:{l:p.x-d-1-w,t:p.y-h/2,r:p.x-d-1,b:p.y+h/2},t:{l:p.x-w/2,t:p.y-d-h,r:p.x+w/2,b:p.y-d}};
-      for(const k of ['b','r','l','t']){ const c=C[k]; if(c.l<2||c.r>A.W-2||c.b>A.bot) continue; if(!O.some(o=>hit(o,c,3))&&!ui.some(o=>hit(o,c,2))){ out.push({type:bld?'bld':'one',x:p.x,y:p.y,rows:p.rows,lab:k,name,sub,boxes:[box,c]}); return; } } }
+    const name=bld?(r0.a.split(' ').slice(1).join(' ').split(',')[0]):r0.n, sub=bld?`${p.rows.length}곳`:subOf(r0,S);
+    if(!O.some(o=>hit(o,box,1))){ const sp=spot(p.x,p.y,name,sub,O);
+      if(sp){ out.push({type:bld?'bld':'one',x:p.x,y:p.y,rows:p.rows,lab:sp.k,name,sub,boxes:[box,sp.c]}); return; } }
     let best=null,bd=1e9; out.forEach(m=>{ if(m.type==='bld') return; const dd=Math.hypot(m.x-p.x,m.y-p.y); if(dd<bd){bd=dd;best=m;} });
     if(!bld&&best&&bd<=MERGE){ const its=[...(best.items||[{x:best.x,y:best.y,rows:best.rows}]),p], x=its.reduce((s,q)=>s+q.x,0)/its.length, y=its.reduce((s,q)=>s+q.y,0)/its.length;
       if(its.every(q=>Math.hypot(q.x-x,q.y-y)<=MERGE)){ Object.assign(best,{type:'grp',items:its,rows:its.flatMap(q=>q.rows),x,y,lab:null,boxes:[pb(x,y,24)]}); return; } }
@@ -961,9 +993,11 @@ function drawOdt(){
       d.className='mg'; d.innerHTML=`<div class="halo" style="width:${2*rad}px;height:${2*rad}px"></div><div class="gp"><span class="gi">${ic3.map(n=>`<i>${ic(n)}</i>`).join('')}</span><b>${m.rows.length}</b></div>`;
       d.querySelector('.gp').addEventListener('click',ev=>{ ev.stopPropagation(); if(openSt&&openSt.el===d) return closeStack(); collapse(); openStack(d,m.rows,new K.LatLng(pos.y,pos.x),d.querySelector('.gp').offsetWidth/2+6); });
       put(pos,d,5,true); return; }
-    const r0=m.rows[0]; d.className='mp st-prep'+(m.type==='bld'?' bld':''); d.innerHTML=pinHTML(m.type==='bld'?'buildings':iconOf(r0,S),'prep',m.rows.length,m.lab,m.name,m.sub);
-    d.querySelector('.pc').addEventListener('click',ev=>{ ev.stopPropagation(); if(m.type==='bld'){ if(openSt&&openSt.el===d) return closeStack(); collapse(); openStack(d,m.rows,null,20); } else openRow(r0,false); });
-    put(m.type==='one'?r0:pos,d,m.type==='bld'?6:3,true); });
+    const r0=m.rows[0];
+    if(m.type==='one'){ put(r0,pinEl(r0,m.lab,m.name,m.sub),3,true); return; }
+    d.className='mp st-prep bld'; d.innerHTML=pinHTML('buildings','prep',m.rows.length,m.lab,m.name,m.sub);
+    d.querySelector('.pc').addEventListener('click',ev=>{ ev.stopPropagation(); if(openSt&&openSt.el===d) return closeStack(); collapse(); openStack(d,m.rows,null,20); });
+    put(pos,d,6,true); });
 }
 // ---- 가게 정보창 ----
 function openRow(r,pan){ collapse(); closeStack(); closeCard(); const S=activeSubs();
@@ -976,7 +1010,7 @@ function openRow(r,pan){ collapse(); closeStack(); closeCard(); const S=activeSu
   cardOv=new K.CustomOverlay({position:new K.LatLng(r.y,r.x),content:el.firstChild,yAnchor:1,zIndex:10,clickable:true}); cardOv.setMap(map);
   if(innerWidth<=820){ if(preCardMin===null) preCardMin=panelEl().classList.contains('min'); setPanel(true); }
   if(pan) map.panTo(new K.LatLng(r.y,r.x)); setTimeout(fitCard, pan?450:280); }
-const hideGas=hideCard; hideCard=function(){ hideGas(); if(cardOv){ cardOv.setMap(null); cardOv=null; } if(cardPin){ cardPin.setMap(null); cardPin=null; } };
+const hideGas=hideCard; hideCard=function(){ const j=selI; hideGas(); if(j>=0&&mixed()&&markers[j]) markers[j].setMap(null); if(cardOv){ cardOv.setMap(null); cardOv=null; } if(cardPin){ cardPin.setMap(null); cardPin=null; } };
 closeCard=function(){ const had=!!overlay||!!cardOv; hideCard(); if(had&&preCardMin!==null&&innerWidth<=820) setPanel(preCardMin); preCardMin=null; };
 
 // ---- 리스트·검색 ----
@@ -1036,7 +1070,9 @@ qEl.addEventListener('blur',()=>{ if(!qEl.value.trim()) panelEl().style.height='
 const _setPanel=setPanel; setPanel=function(min){ if(min||!state.q) panelEl().style.height=''; _setPanel(min); setTimeout(()=>{ fit(); drawOdt(); },280); };
 
 // ---- 새로 그리기 ----
-const _render=render; render=function(){ _render(); drawOdt(); };
+const _render=render; render=function(){ _render(); if(mixed()) markers.forEach((m,i)=>{ if(i!==selI) m.setMap(null); }); drawOdt(); };
+const _ll=layoutLabels; layoutLabels=function(){ if(mixed()){ LBL.forEach(o=>{ if(o&&o.__on){ o.setMap(null); o.__on=false; } }); return; } _ll(); };
+const _oc=openCard; openCard=function(i,pan){ _oc(i,pan); if(mixed()) markers[i].setMap(map); };
 function refresh(){ LIMIT=60; render(); }
 // 지도 준비되면: 주유 핀 바꾸기, 이동·확대 때 다시 그리기, 끌면 분류 접기
 (function wait(){ if(typeof map==='undefined'||!map||!markers.length) return setTimeout(wait,120);
@@ -1047,7 +1083,7 @@ function refresh(){ LIMIT=60; render(); }
   refresh(); })();
 // 데이터 목록
 fetch('odt/meta.json?t='+Math.floor(Date.now()/3600000)).then(r=>r.json()).then(m=>{ META=m; META.subIdx={}; m.subs.forEach(([g,s],i)=>{ META.subIdx[m.groups[g]+'|'+s]=i; });
-  if(m.fake){ const b=document.createElement('div'); b.className='fakebar'; b.textContent='시험판 · 다른 업종 위치는 가짜예요'; document.body.appendChild(b); }
+  if(m.fake){ const b=document.createElement('div'); b.className='fakebar'; b.textContent='시험판 · 다른 업종 위치는 가짜예요'; document.querySelector('.status').appendChild(b); }
   ensure(U.sel.filter(x=>x!==GAS)).then(refresh); }).catch(()=>{});
 addEventListener('resize',fit);
 draw();
