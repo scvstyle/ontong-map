@@ -281,6 +281,9 @@ body.big .bi{height:33px;font-size:13.5px} body.big .bsc{max-height:197px}
 
 .fakebar{align-self:flex-end;margin-top:2px;background:#e5484d;color:#fff;font:700 11.5px/1 Pretendard,sans-serif;padding:6px 10px;border-radius:999px;pointer-events:none;white-space:nowrap}
 .item .pr2{grid-row:1 / span 3;grid-column:3;text-align:right;align-self:center;white-space:nowrap} .item .pr2 b{font-size:15px} .item .pr2 small{font-size:12px;color:var(--sub)} .item .pr2 i{display:block;font-style:normal;font-size:12px;color:var(--sub)}
+/* 대분류 '전체' · '전체' 켜진 동안 기억된 대분류는 흐리게 */
+.gb.all{font-weight:700}
+.gb.mem{opacity:.42}
 </style>
 </head>
 <body>
@@ -838,13 +841,15 @@ let BIG=LSG('big')===true;
 document.body.classList.toggle('mini',!BIG); document.body.classList.toggle('big',BIG);
 
 // ---- 분류 상태(기억). 켤 때마다 대분류 열 펼침·소분류 열 안 보임 ----
-const U=Object.assign({sel:[],subs:{},all:{},fuel:null},LSG('cat')||{}); U.cur=null; U.open=true;
-const saveU=()=>LSS('cat',{sel:U.sel,subs:U.subs,all:U.all,fuel:U.fuel});
-const gasOn=()=>U.sel.includes(GAS)&&!!U.fuel;
+const U=Object.assign({sel:[],subs:{},all:{},fuel:null,every:false,lastFuel:null},LSG('cat')||{}); U.cur=null; U.open=true;
+const saveU=()=>LSS('cat',{sel:U.sel,subs:U.subs,all:U.all,fuel:U.fuel,every:U.every,lastFuel:U.lastFuel});
+// 대분류 '전체'(U.every): 모든 가맹점. 켜져 있는 동안 다른 대분류 선택은 흐리게 기억
+const gasOn=()=>U.every||(U.sel.includes(GAS)&&!!U.fuel);
+const noFuel=()=>U.every&&!U.fuel;   // '전체'인데 유종을 안 고름 → 주유소는 핀+상호만(가격 없음)
 if(U.fuel) state.fuel=U.fuel;
 // 소분류가 하나도 없는 대분류는 '지금 보고 있는' 것 말고는 선택에서 뺌(연한 청록 안 남게)
 const hasSub=g=>g===GAS?!!U.fuel:!!(U.all[g]||(U.subs[g]||[]).length);
-const prune=()=>{ U.sel=U.sel.filter(g=>g===U.cur||hasSub(g)); };
+const prune=()=>{ if(U.every) return; U.sel=U.sel.filter(g=>g===U.cur||hasSub(g)); };
 prune();
 
 // ---- 데이터: 대분류별 파일을 고를 때 불러옴 ----
@@ -853,7 +858,7 @@ const gIdx=g=>META?META.groups.indexOf(g):-1;
 function subId(g,s){ return META.subIdx[g+'|'+s]; }
 function ensure(gs){ if(!META) return Promise.resolve(); return Promise.all(gs.map(g=>{ const i=gIdx(g); if(i<0||ROWS[i]) return null;
   return LOADING[i]||(LOADING[i]=fetch(`odt/g${i}.json?v=${META.base}`).then(r=>r.json()).then(rows=>{ ROWS[i]=rows.map((r,k)=>({n:r[0],a:r[1],x:r[2],y:r[3],s:r.slice(4),g:i,k})); }).catch(()=>{})); })); }
-const activeSubs=()=>{ const S=new Set(); if(!META) return S; U.sel.forEach(g=>{ if(g===GAS) return; (U.all[g]?SUBN[g]:(U.subs[g]||[])).forEach(s=>{ const id=subId(g,s); if(id!=null) S.add(id); }); }); return S; };
+const activeSubs=()=>{ const S=new Set(); if(!META) return S; if(U.every){ META.subs.forEach((_,i)=>S.add(i)); return S; } U.sel.forEach(g=>{ if(g===GAS) return; (U.all[g]?SUBN[g]:(U.subs[g]||[])).forEach(s=>{ const id=subId(g,s); if(id!=null) S.add(id); }); }); return S; };
 const subName=id=>META.subs[id][1], grpName=id=>META.groups[META.subs[id][0]];
 const catLine=r=>r.s.map(id=>`${e(grpName(id))}<s>›</s>${e(subName(id))}`).join('<s>·</s>');
 function rowsActive(){ const S=activeSubs(), out=[]; if(!S.size) return out;
@@ -863,7 +868,7 @@ const iconOf=(r,S)=>{ if(r.gas!=null) return 'gas-station'; const id=(S&&r.s.fin
 const mixed=()=>gasOn()&&state.prep&&activeSubs().size>0;
 const gasRows=()=>DATA.map((p,i)=>visible(p)?{n:p.n,a:p.a.replace(/^대전(광역시)?\s*/,''),x:p.x,y:p.y,s:[],gas:i,c:p.c}:null).filter(Boolean);
 const stCls=r=>r.gas!=null?'st-'+r.c:'st-prep';
-const gasSub=r=>{ const v=priceOf(DATA[r.gas]); return v?`${FUEL[state.fuel]} ${won(v.v)}원`:'주유·충전'; };
+const gasSub=r=>{ const v=!noFuel()&&priceOf(DATA[r.gas]); return v?`${FUEL[state.fuel]} ${won(v.v)}원`:'주유·충전'; };
 const subOf=(r,S)=>r.gas!=null?gasSub(r):subName(r.s.find(x=>S.has(x))??r.s[0]);
 function openAny(r){ if(r.gas==null) return openRow(r,false); collapse(); closeStack(); openCard(r.gas,false); }
 const cut=(t,n)=>t.length>n?t.slice(0,n)+'…':t;
@@ -876,11 +881,11 @@ const cb=document.createElement('button'); cb.className='cbtn'; top.appendChild(
 function draw(){
   cats.hidden=!U.open; cb.hidden=U.open;
   // 분류 버튼: '분류 선택' + 요약(대분류 1개: '쇼핑 · 3', 여러 개: '쇼핑 외 1 · 4', '전체'는 그 대분류 소분류 수로 셈)
-  const eff=U.sel.filter(hasSub), nSub=eff.reduce((s,g)=>s+(g===GAS?1:U.all[g]?SUBN[g].length:U.subs[g].length),0);
-  const sum=!eff.length?'':eff.length===1&&eff[0]===GAS?`${GAS} · ${FUELS.find(f=>f[0]===U.fuel)[1]}`:eff.length===1&&U.all[eff[0]]?`${eff[0]} · 전체`:`${eff[0]}${eff.length>1?` 외 ${eff.length-1}`:''} · ${nSub}`;
+  const eff=U.every?[]:U.sel.filter(hasSub), nSub=eff.reduce((s,g)=>s+(g===GAS?1:U.all[g]?SUBN[g].length:U.subs[g].length),0);
+  const sum=U.every?'전체':!eff.length?'':eff.length===1&&eff[0]===GAS?`${GAS} · ${FUELS.find(f=>f[0]===U.fuel)[1]}`:eff.length===1&&U.all[eff[0]]?`${eff[0]} · 전체`:`${eff[0]}${eff.length>1?` 외 ${eff.length-1}`:''} · ${nSub}`;
   cb.innerHTML=`${ic('adjustments-horizontal')}<b>분류 선택</b>${sum?`<i>${e(sum)}</i>`:''}`;
   const pw=document.querySelector('.pill'); if(pw&&pw.offsetWidth) cb.style.minWidth=pw.offsetWidth+'px';
-  document.getElementById('gcol').innerHTML=CATS.map(([g])=>`<button class="gb${U.sel.includes(g)?(U.cur===g?' cur':' on'):''}" data-g="${e(g)}">${ic(GI[g])}${e(g)}</button>`).join('');
+  document.getElementById('gcol').innerHTML=`<button class="gb all${U.every?' cur':''}" data-g="">${ic('checks')}전체</button>`+CATS.map(([g])=>`<button class="gb${U.sel.includes(g)?(U.every?' on mem':U.cur===g?' cur':' on'):''}" data-g="${e(g)}">${ic(GI[g])}${e(g)}</button>`).join('');
   const sc=document.getElementById('scol'); sc.hidden=!U.cur;
   if(U.cur===GAS) sc.innerHTML=FUELS.map(([k,n])=>`<button class="rb${U.fuel===k?' on':''}" data-f="${k}"><span class="rd"></span>${n}</button>`).join('');
   else if(U.cur){ const g=U.cur, all=!!U.all[g], on=U.subs[g]||[];
@@ -892,16 +897,25 @@ function mask(c){ c.classList.toggle('more',c.scrollTop+c.clientHeight<c.scrollH
 document.querySelectorAll('.ccol').forEach(c=>c.addEventListener('scroll',()=>mask(c),{passive:true}));
 cats.addEventListener('click',ev=>{ ev.stopPropagation();
   const g=ev.target.closest('.gb'), s=ev.target.closest('.sb'), r=ev.target.closest('.rb'); let scrollKeep=null;
-  if(g){ const n=g.dataset.g; if(!U.sel.includes(n)){U.sel.push(n);U.cur=n;} else if(U.cur!==n) U.cur=n; else {U.sel=U.sel.filter(x=>x!==n);U.cur=null;}
+  if(g){ const n=g.dataset.g;
+    if(!n){ U.every=!U.every; U.cur=null; }   // 대분류 '전체'
+    else if(U.every&&U.sel.includes(n)) U.sel=U.sel.filter(x=>x!==n);   // 흐린(기억된) 것 → 기억에서 해제, '전체' 유지
+    else { if(U.every){ U.every=false; prune(); }   // 다른 것 → '전체' 끄고 그것 켬(기억된 것 되살아남)
+      if(!U.sel.includes(n)){ U.sel.push(n); U.cur=n;
+        // 처음 켜는 대분류는 소분류 '전체'로 시작. 골라 둔 게 있으면 그대로
+        if(n===GAS){ if(!U.fuel){ U.fuel=U.lastFuel||'B027'; state.fuel=U.fuel; savePref(); } }
+        else if(!hasSub(n)) U.all[n]=true; }
+      else if(U.cur!==n) U.cur=n; else {U.sel=U.sel.filter(x=>x!==n);U.cur=null;} }
     document.getElementById('scol').scrollTop=0; scrollKeep=document.getElementById('gcol').scrollTop; }
   if(s){ const g0=U.cur, n=s.dataset.s, on=U.subs[g0]||(U.subs[g0]=[]); scrollKeep=null;
     if(!n) U.all[g0]=!U.all[g0];
     else if(U.all[g0]){ const i=on.indexOf(n); if(i>=0) on.splice(i,1); else { U.all[g0]=false; on.push(n); } }  // 흐린 것 → 기억에서 해제 / 체크 안 된 것 → '전체' 끄고 켬
     else { const i=on.indexOf(n); if(i<0) on.push(n); else on.splice(i,1); } }
-  if(r){ U.fuel=U.fuel===r.dataset.f?null:r.dataset.f; if(U.fuel){ state.fuel=U.fuel; savePref(); } }   // 같은 유종 다시 누르면 해제
+  if(r){ U.fuel=U.fuel===r.dataset.f?null:r.dataset.f; if(U.fuel){ U.lastFuel=U.fuel; state.fuel=U.fuel; savePref(); } }   // 같은 유종 다시 누르면 해제
   prune();
   const sv=document.getElementById('scol').scrollTop; saveU(); draw(); if(s) document.getElementById('scol').scrollTop=sv; if(scrollKeep!=null) document.getElementById('gcol').scrollTop=scrollKeep;
-  if(g||s||r){ closeCard(); ensure(U.sel.filter(x=>x!==GAS)).then(refresh); refresh(); } });
+  if(g||s||r){ closeCard(); ensure(wantG()).then(refresh); refresh(); } });
+function wantG(){ return U.every&&META?META.groups:U.sel.filter(x=>x!==GAS); }
 cb.addEventListener('click',ev=>{ ev.stopPropagation(); U.open=true; closeCard(); draw(); });
 let pulsed=false;   // 처음 접힐 때 한 번만 분류 버튼을 살짝 깜빡여 눈에 띄게
 const collapse=()=>{ if(U.open){ U.open=false; draw(); if(!pulsed){ pulsed=true; cb.classList.add('pulse'); setTimeout(()=>cb.classList.remove('pulse'),2600); } } };
@@ -914,6 +928,7 @@ if(!PREF_KEYS.includes('prep')) PREF_KEYS.push('prep');
   c.addEventListener('click',()=>{ state.prep=!state.prep; c.classList.toggle('on',state.prep); savePref(); closeCard(); refresh(); }); }
 
 // ---- 주유소: 고른 경우에만, 핀은 캐시백 색 동그라미+주유기 ----
+const _sells=sells; sells=function(p){ return noFuel()?true:_sells(p); };   // '전체'+유종 미선택: 모든 주유소·충전소
 const visGas=visible; visible=function(p){ return gasOn()&&visGas(p); };
 function gasPin(c,big){ const col={ok:'#0f9d8a',no:'#8a939e',check:'#d98a00'}[c], z=big?34:28, r=z/2-1.5, s=(big?.78:.64), o=(z-24*s)/2;
   const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${z}" height="${z}" viewBox="0 0 ${z} ${z}"><circle cx="${z/2}" cy="${z/2}" r="${r}" fill="${col}" stroke="#fff" stroke-width="2"/><g transform="translate(${o} ${o}) scale(${s})" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">${ICONS['gas-station']}</g></svg>`;
@@ -1017,7 +1032,7 @@ closeCard=function(){ const had=!!overlay||!!cardOv; hideCard(); if(had&&preCard
 let LIMIT=60, sortGas=LSG('gsort')||'price';
 const distTxt=(r,cy,cx)=>{ const m=Math.sqrt(dist2(r,cy,cx))*111000; return m<1000?Math.round(m/10)*10+'m':(m/1000).toFixed(1)+'km'; };
 const itemRow=(r,cy,cx)=>`<div class="item i3" data-r="${r.g}:${r.k}"><span class="badge b-prep">파악 중</span><div class="nm">${e(r.n)}</div><div class="cg">${catLine(r)}</div><div class="ad">${e(r.a.replace(/^\S+구\s*/,''))}</div><div class="ds">${distTxt(r,cy,cx)}</div></div>`;
-const gasRow=(i,cy,cx)=>{ const p=DATA[i], pr=priceOf(p); return `<div class="item i3${i===selI?' sel':''}" data-i="${i}"><span class="badge ${BADGE[p.c]}">${SHORT[p.c]}</span><div class="nm">${esc(p.n)}</div><div class="cg">주유·충전<s>›</s>${p.t==='충전소'?'충전소':'주유소'}</div><div class="ad">${esc(p.g)} · ${esc(p.a.replace(/^대전(광역시)?\s*\S+구\s*/,''))}</div><div class="pr2">${pr?`<b>${won(pr.v)}</b><small>원</small>`:'<small>가격 없음</small>'}<i>${distTxt(p,cy,cx)}</i></div></div>`; };
+const gasRow=(i,cy,cx)=>{ const p=DATA[i], pr=priceOf(p); return `<div class="item i3${i===selI?' sel':''}" data-i="${i}"><span class="badge ${BADGE[p.c]}">${SHORT[p.c]}</span><div class="nm">${esc(p.n)}</div><div class="cg">주유·충전<s>›</s>${p.t==='충전소'?'충전소':'주유소'}</div><div class="ad">${esc(p.g)} · ${esc(p.a.replace(/^대전(광역시)?\s*\S+구\s*/,''))}</div><div class="pr2">${noFuel()?'':pr?`<b>${won(pr.v)}</b><small>원</small>`:'<small>가격 없음</small>'}<i>${distTxt(p,cy,cx)}</i></div></div>`; };
 const GRANK={ok:0,check:1,no:2};
 renderList=function(){
   const list=document.getElementById('list'), cnt=document.getElementById('count'), c=map?map.getCenter():null, cy=c?la(c):36.35, cx=c?lo(c):127.38;
@@ -1029,7 +1044,7 @@ renderList=function(){
     sg.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.s===sortGas)); }
   else if(sg) sg.remove();
   if(q){ return renderSearch(list,cnt,cy,cx); }
-  if(!U.sel.length){ list.innerHTML='<div class="empty">왼쪽 위에서 업종을 골라 보세요</div>'; cnt.textContent=''; return; }
+  if(!U.sel.length&&!U.every){ list.innerHTML='<div class="empty">왼쪽 위에서 업종을 골라 보세요</div>'; cnt.textContent=''; return; }
   const B=local&&map?inBox():null, inb=r=>!B||(r.y<=B.n&&r.y>=B.s&&r.x>=B.w&&r.x<=B.e);
   const gi=gasOn()?DATA.map((p,i)=>i).filter(i=>visible(DATA[i])&&(!local||inView(DATA[i]))):[];
   const rows=state.prep?rowsActive().filter(inb):[];
@@ -1045,7 +1060,7 @@ renderList=function(){
   cnt.textContent=`${total.toLocaleString()}곳 · ${onlyGas&&sortGas==='price'?'가격순':'가까운 순'}`; };
 async function renderSearch(list,cnt,cy,cx){ const q=state.q, my=++renderSearch.n;
   if(META&&Object.keys(ROWS).length<META.groups.length){ list.innerHTML='<div class="empty">찾는 중…</div>'; await ensure(META.groups); if(my!==renderSearch.n) return; }
-  const S=activeSubs(), selG=new Set(U.sel.filter(g=>g!==GAS).map(gIdx)), hitR=r=>(r.n+' '+r.a).toLowerCase().includes(q);
+  const S=activeSubs(), selG=new Set(U.every?[]:U.sel.filter(g=>g!==GAS&&!U.all[g]).map(gIdx)), hitR=r=>(r.n+' '+r.a).toLowerCase().includes(q);
   const A=[],B=[],C=[];
   for(const i in ROWS) for(const r of ROWS[i]){ if(!hitR(r)) continue; if(r.s.some(id=>S.has(id))) A.push({r}); else if(r.s.some(id=>selG.has(META.subs[id][0]))) B.push({r}); else C.push({r}); }
   DATA.forEach((p,i)=>{ if(!visGas(p)) return; (gasOn()?A:C).push({gas:i,p}); });
@@ -1057,10 +1072,17 @@ async function renderSearch(list,cnt,cy,cx){ const q=state.q, my=++renderSearch.
   if(!shown&&full){ list.innerHTML=`<div class="empty">이 지도 안에는 없어요 · ${toAll(full)}</div>`; bindAll(list); cnt.textContent='검색 0곳'; return; }
   [A,B,C].forEach(ord);
   const row=it=>it.gas!=null?gasRow(it.gas,cy,cx):itemRow(it.r,cy,cx);
+  // 분류를 아무것도 안 골랐거나 대분류 '전체'면: 구역 없이 쭉
+  const flat=U.every||(!S.size&&!gasOn());
+  if(flat){ const L=[...A,...B,...C]; ord(L); const lf=renderSearch.lim?renderSearch.lim.A:60;
+    list.innerHTML=(L.length?L.slice(0,lf).map(row).join('')+(L.length>lf?`<button class="morebtn" data-more="A">더 보기 (${(L.length-lf).toLocaleString()}곳)</button>`:''):'<div class="nores">검색 결과 없음</div>');
+    if(shown<full) list.insertAdjacentHTML('beforeend',`<div class="empty">이 지도 밖에도 있어요 · ${toAll(full)}</div>`); bindAll(list);
+    list.querySelectorAll('[data-more]').forEach(b=>b.addEventListener('click',()=>{ renderSearch.lim={A:lf+60,B:3,C:3}; renderSearch(list,cnt,cy,cx); }));
+    cnt.textContent=`검색 ${shown.toLocaleString()}곳`; return; }
   const selNames=[...(gasOn()?[GAS]:[]),...U.sel.filter(g=>g!==GAS).flatMap(g=>U.all[g]?[g+' 전체']:(U.subs[g]||[]))];
   const sec=(t,sub,arr,few,id)=>`<div class="sec">${t}${sub?` <small>${e(sub)}</small>`:''}</div>`+(arr.length?arr.slice(0,few).map(row).join('')+(arr.length>few?`<button class="morebtn" data-more="${id}">더 보기 (${(arr.length-few).toLocaleString()}곳)</button>`:''):'<div class="nores">검색 결과 없음</div>');
   const lim=renderSearch.lim||{A:40,B:3,C:3};
-  const selGn=U.sel.filter(g=>g!==GAS);
+  const selGn=U.sel.filter(g=>g!==GAS&&!U.all[g]);   // 소분류가 '전체'인 대분류는 '다른 업종'이 없음
   list.innerHTML=sec('선택한 업종',selNames.join(' · '),A,lim.A,'A')+(selGn.length?sec(`${selGn.join('·')}의 다른 업종`,'',B,lim.B,'B'):'')+sec('그 밖의 업종','',C,lim.C,'C');
   if(shown<full) list.insertAdjacentHTML('beforeend',`<div class="empty">이 지도 밖에도 있어요 · ${toAll(full)}</div>`); bindAll(list);
   list.querySelectorAll('[data-more]').forEach(b=>b.addEventListener('click',()=>{ renderSearch.lim=Object.assign({},lim,{[b.dataset.more]:lim[b.dataset.more]+40}); renderSearch(list,cnt,cy,cx); }));
@@ -1091,9 +1113,9 @@ function refresh(){ LIMIT=60; render(); }
 // 데이터 목록
 fetch('odt/meta.json?t='+Math.floor(Date.now()/3600000)).then(r=>r.json()).then(m=>{ META=m; META.subIdx={}; m.subs.forEach(([g,s],i)=>{ META.subIdx[m.groups[g]+'|'+s]=i; });
   if(m.fake){ const b=document.createElement('div'); b.className='fakebar'; b.textContent='시험판 · 다른 업종 위치는 가짜예요'; document.querySelector('.status').appendChild(b); }
-  ensure(U.sel.filter(x=>x!==GAS)).then(refresh); }).catch(()=>{});
+  ensure(wantG()).then(refresh); }).catch(()=>{});
 addEventListener('resize',fit);
-draw();
+draw(); window.__ac={U,saveU};   // 시험용
 })();
 </script>
 </body>
