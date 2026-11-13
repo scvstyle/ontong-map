@@ -951,7 +951,7 @@ function inBox(){ const A=area(), pj=map.getProjection(), a=pj.coordsFromContain
   return {n:Math.max(la(a),la(b)),s:Math.min(la(a),la(b)),w:Math.min(lo(a),lo(b)),e:Math.max(lo(a),lo(b))}; }
 function drawOdt(){
   if(!map||!map.getProjection||dragging) return; clearOv();
-  const S=activeSubs(), M=mixed(), src=[...(state.prep&&S.size?rowsActive():[]),...(M?gasRows():[])];   // 지금 다른 업종은 모두 '준비 중'
+  const S=activeSubs(), M=mixed(), q=state.q, src=[...(state.prep&&S.size?rowsActive().filter(r=>!q||(r.n+' '+r.a).toLowerCase().includes(q)):[]),...(M?gasRows():[])];   // 검색 중이면 지도에도 검색된 곳만   // 지금 다른 업종은 모두 '준비 중'
   if(!src.length) return;
   const B=inBox(), A=area(), pj=map.getProjection(), pts=[];
   for(const r of src){ if(r.y>B.n||r.y<B.s||r.x<B.w||r.x>B.e) continue; const p=pj.containerPointFromCoords(new K.LatLng(r.y,r.x)); pts.push({r,x:p.x,y:p.y}); }
@@ -1084,7 +1084,7 @@ function refresh(){ LIMIT=60; render(); }
 // 지도 준비되면: 주유 핀 바꾸기, 이동·확대 때 다시 그리기, 끌면 분류 접기
 (function wait(){ if(typeof map==='undefined'||!map||!markers.length) return setTimeout(wait,120);
   ['ok','no','check'].forEach(c=>{ imgs[c]=gasPin(c); imgsBig[c]=gasPin(c,true); }); markers.forEach((m,i)=>m.setImage(imgFor(i)));
-  K.event.addListener(map,'idle',drawOdt);
+  K.event.addListener(map,'idle',()=>{ drawOdt(); if(state.q) renderList(); });   // 검색 중 지도를 옮기면 범위·가까운 순 다시
   K.event.addListener(map,'dragstart',()=>{ collapse(); closeStack(); });
   K.event.addListener(map,'click',()=>{ closeStack(); });
   refresh(); })();
