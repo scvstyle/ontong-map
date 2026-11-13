@@ -270,19 +270,18 @@ body.mini .chip{font-size:11.5px;padding:5px 9px;gap:5px} body.mini .status{gap:
 .bz svg{width:14px;height:14px}
 /* 크기 버튼 */
 #szb{flex-direction:column;gap:1px;color:var(--ink)} #szb b{font:800 15px/1 Pretendard,sans-serif} #szb small{font:600 8.5px/1 Pretendard,sans-serif;color:var(--sub)}
-/* ===== 크게 보기(어르신용) ===== */
-body.big .gb,body.big .cbtn{height:40px;font-size:15px;gap:7px} body.big .gb{padding:0 15px 0 11px} body.big .gb svg,body.big .cbtn svg{width:19px;height:19px}
-body.big .sb,body.big .rb{height:38px;font-size:14.5px} body.big .sb{padding:0 14px 0 6px} body.big .sb .ck{width:26px;height:26px} body.big .sb .ck svg{width:15px;height:15px}
-body.big .rb .rd{width:17px;height:17px} body.big .ccol{gap:7px}
-body.big .chip{font-size:14px;padding:8px 14px} body.big .chip .dot{width:11px;height:11px} body.big .status{gap:7px}
-body.big .search input{font-size:16px;padding:12px 13px} body.big .scope button,body.big .count,body.big .sortseg button{font-size:14px}
-body.big .item .nm{font-size:16.5px} body.big .item .cg,body.big .item .ad{font-size:13.5px} body.big .item .ds{font-size:14px} body.big .item .badge{font-size:12.5px}
-body.big .empty,body.big .sec,body.big .nores,body.big .morebtn{font-size:14.5px}
-body.big .card{font-size:14.5px;width:300px} body.big .card h3{font-size:18px} body.big .card .cg{font-size:14px}
-body.big .pl b{font-size:13px} body.big .pl small{font-size:11px}
-body.big .mp .pc{width:30px;height:30px} body.big .mp .pc svg{width:17px;height:17px}
-body.big .bi{height:36px;font-size:14.5px} body.big .bsc{max-height:212px}
-body.big .mk{font-size:13px}
+/* ===== 크게 보기(어르신용): 미니보다 한 단계 큼 ===== */
+body.big .gb,body.big .cbtn{height:36px;font-size:13.5px;gap:6px} body.big .gb{padding:0 13px 0 10px} body.big .gb svg,body.big .cbtn svg{width:17px;height:17px}
+body.big .sb,body.big .rb{height:34px;font-size:13.5px} body.big .sb{padding:0 12px 0 5px} body.big .sb .ck{width:24px;height:24px} body.big .sb .ck svg{width:14px;height:14px}
+body.big .rb .rd{width:16px;height:16px} body.big .ccol{gap:6px}
+body.big .chip{font-size:13px;padding:7px 12px} body.big .chip .dot{width:10px;height:10px} body.big .status{gap:6px}
+body.big .search input{font-size:15px} body.big .scope button,body.big .count,body.big .sortseg button{font-size:13px}
+body.big .item .nm{font-size:15.5px} body.big .item .cg,body.big .item .ad{font-size:13px} body.big .item .ds{font-size:13px} body.big .item .badge{font-size:12px}
+body.big .empty,body.big .sec,body.big .nores,body.big .morebtn{font-size:13.5px}
+body.big .card{font-size:14px} body.big .card h3{font-size:17px} body.big .card .cg{font-size:13.5px}
+body.big .pl b{font-size:12.5px} body.big .pl small{font-size:10.5px}
+body.big .mp .pc{width:28px;height:28px} body.big .mp .pc svg{width:16px;height:16px}
+body.big .bi{height:33px;font-size:13.5px} body.big .bsc{max-height:197px}
 </style>
 </head>
 <body>
@@ -902,7 +901,7 @@ const pick=a=>a[Math.floor(rnd()*a.length)];
 const cvs=document.createElement('canvas').getContext('2d');
 const tw=(t,f)=>{ cvs.font=f+' Pretendard, sans-serif'; return cvs.measureText(t).width; };
 const hit=(a,b,g)=>a.l<b.r+g&&a.r>b.l-g&&a.t<b.b+g&&a.b>b.t-g;
-const FT=()=>BIG?{n:'700 13px',s:'500 11px',R:15,h:31}:{n:'700 11.5px',s:'500 10px',R:13.5,h:28};
+const FT=()=>BIG?{n:'700 12.5px',s:'500 10.5px',R:14,h:30}:{n:'700 11.5px',s:'500 10px',R:13.5,h:28};
 function area(){ const m=document.getElementById('map'), pa=document.getElementById('panel').getBoundingClientRect();
   return {W:m.clientWidth, top:58, bot:(innerWidth<=820?pa.top:innerHeight)-16}; }
 function spots(n,A,minD){ const out=[]; let tries=0; while(out.length<n&&tries++<4000){ const x=18+rnd()*(A.W-36), y=A.top+rnd()*(A.bot-A.top); if(out.every(p=>Math.hypot(p.x-x,p.y-y)>minD)) out.push({x,y}); } return out; }
@@ -935,14 +934,15 @@ function layout(pins,A){
   return out;
 }
 let openSt=null;
-function closeStack(){ if(openSt){ openSt.st.remove(); openSt.el.classList.remove('open'); const pl=openSt.el.querySelector('.pl'); if(pl) pl.style.display=''; openSt=null; } }
+function closeStack(){ if(openSt){ if(openSt.host) openSt.host.style.zIndex=openSt.z; openSt.st.remove(); openSt.el.classList.remove('open'); const pl=openSt.el.querySelector('.pl'); if(pl) pl.style.display=''; openSt=null; } }
 function openStack(el,items,zoomBtn,left){ closeStack();
   const cx=area().W/2, list=[...items].sort((a,b)=>(RANK[a.st]-RANK[b.st])||((a.dist||0)-(b.dist||0)));
   const st=document.createElement('div'); st.className='bst'; st.style.left=left+'px';
   st.innerHTML=`<div class="bsc">${list.map(s=>`<button class="bi"><span class="mp sm st-${s.st}"><span class="pc">${ic(SI[s.sub])}</span></span>${e(s.name)}</button>`).join('')}</div>`+(zoomBtn?`<button class="bz">${ic('adjustments-horizontal').replace(ICONS['adjustments-horizontal'],'<circle cx="10" cy="10" r="6"/><path d="M21 21l-6.5-6.5M10 7v6M7 10h6"/>')}지도 확대해서 보기</button>`:'');
   const sc=st.firstChild; sc.addEventListener('scroll',()=>mask(sc),{passive:true});
   el.appendChild(st); el.classList.add('open'); const pl=el.querySelector('.pl'); if(pl) pl.style.display='none';
-  requestAnimationFrame(()=>mask(sc)); openSt={el,st}; }
+  requestAnimationFrame(()=>mask(sc)); const host=el.parentElement, z=host?host.style.zIndex:''; if(host) host.style.zIndex='1000';  // 펼친 목록은 맨 위로
+  openSt={el,st,host,z}; }
 function drawMarkers(ms){ ms.forEach(m=>{ const d=document.createElement('div'); let z=3;
   if(m.type==='grp'){ const n=m.items.length, subs=[...new Set(m.items.map(q=>q.sub))].slice(0,3), r=Math.min(HALO,Math.max(...m.items.map(q=>Math.hypot(q.x-m.x,q.y-m.y)))+12);
     d.className='mg'; d.innerHTML=`<div class="halo" style="width:${2*r}px;height:${2*r}px"></div><div class="gp"><span class="gi">${subs.map(s=>`<i>${ic(SI[s])}</i>`).join('')}</span><b>${n}</b></div>`; z=5;
