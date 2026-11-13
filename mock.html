@@ -830,7 +830,7 @@ const L2=[it('세겹식당 봉명점',['음식점>한식'],'온천북로13번길
   it('이순신소국밥',['음식점>한식'],'온천북로33번길 36-37','260m'),it('(주)디떼',['마트·식품>기타 식품','카페·디저트>카페'],'가정로 85','300m'),it('쉼, 어묵 그리고 한잔 술',['음식점>분식'],'온천북로33번길 21-21','340m'),
   it('콩카페 대전유성봉명점',['카페·디저트>카페'],'문화원로 77','420m'),it('삼복씨닭갈비',['음식점>한식'],'계룡로60번길 35','480m')].join('');
 const sec=(t,sub,body)=>`<div class="sec">${t}${sub?` <small>${sub}</small>`:''}</div>${body}`;
-const L6=sec('선택한 업종','한식 · 카페','<div class="nores">검색 결과 없음</div>')
+const L6=sec('선택한 업종','한식','<div class="nores">검색 결과 없음</div>')
   +sec('음식점의 다른 업종','',it('미소짓는왕만두찐빵',['음식점>분식'],'노은로 178','4.0km')+it('에브리빵',['음식점>기타 음식점'],'신성로68번길 54','4.6km')+it('공주밤빵 유성노은점',['음식점>기타 음식점'],'노은로 157','4.1km')+'<button class="morebtn">더 보기</button>')
   +sec('그 밖의 업종','',it('글로리아제과점',['카페·디저트>빵·떡'],'계룡로 47','300m')+it('수제빵연구소유성지점',['카페·디저트>빵·떡'],'봉명서로 15-5','350m')+it('그랜드 요리제과제빵학원',['학원·교육>기타 학원'],'문화원로6번길 1','600m')+'<button class="morebtn">더 보기</button>');
 const LIST={1:'<div class="empty">왼쪽 위에서 업종을 골라 보세요</div>',2:L2,3:L2,5:L2,7:L2,6:L6,8:'<div class="empty">이 지도 안에는 없어요 · <a href="#" onclick="return false">대전 전체에 114곳</a></div>'};
@@ -841,7 +841,7 @@ const ready=()=>{ try{ return typeof map!=='undefined'&&map&&typeof K!=='undefin
 function apply(){
   const gas=S===4;
   if(!gas){ visible=function(){return false}; renderList=function(){}; render(); }
-  const c=gas?{y:36.3565,x:127.3400,l:6}:{y:36.3530,x:127.3418,l:4};
+  const c=gas?{y:36.3580,x:127.3420,l:7}:{y:36.3530,x:127.3418,l:4};
   map.setLevel(c.l); map.setCenter(new K.LatLng(c.y,c.x));
   if(S===5||S===7) setPanel(true);
   if(S===6){ document.getElementById('panel').style.height='68%'; document.getElementById('q').value='빵'; document.getElementById('scope').classList.add('off'); }
