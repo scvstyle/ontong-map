@@ -844,6 +844,8 @@ document.body.classList.toggle('mini',!BIG); document.body.classList.toggle('big
 
 // ---- 분류 상태(기억). 켤 때마다 대분류 열 펼침·소분류 열 안 보임 ----
 const U=Object.assign({sel:[],subs:{},all:{},fuel:null,every:false,lastFuel:null},LSG('cat')||{}); U.cur=null; U.open=true;
+// 처음(분류 기록 없음): 지금 본 사이트처럼 '주유·충전'+유종으로 시작(예전 사용자가 빈 지도 안 보게, 2026-11-14 A안)
+if(!LSG('cat')){ const sp=LSG('pref'), f=sp&&['B027','D047','K015'].includes(sp.fuel)?sp.fuel:'B027'; U.sel=[GAS]; U.fuel=f; U.lastFuel=f; }
 // 분류 이름이 바뀐 뒤 예전에 저장된 선택 정리(없어진 대분류·소분류 이름 버림)
 U.sel=U.sel.filter(g=>CATS.some(c=>c[0]===g)); for(const g in U.subs){ const ok=CATS.find(c=>c[0]===g); U.subs[g]=ok&&ok[2]?U.subs[g].filter(s=>s in ok[2]):[]; }
 const saveU=()=>LSS('cat',{sel:U.sel,subs:U.subs,all:U.all,fuel:U.fuel,every:U.every,lastFuel:U.lastFuel});
