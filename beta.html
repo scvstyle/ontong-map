@@ -1083,7 +1083,8 @@ function drawOdt(){
       if(sp){ out.push({type:bld?'bld':'one',x:p.x,y:p.y,rows:p.rows,lab:sp.k,name,sub,boxes:[box,sp.c]}); return; } }
     // 겹치거나 이름표 자리가 없으면 가장 가까운 핀·건물·묶음과 합쳐 묶음으로(건물 핀도 포함, 2026-11-14)
     let best=null,bd=1e9; out.forEach(m=>{ const dd=Math.hypot(m.x-p.x,m.y-p.y); if(dd<bd){bd=dd;best=m;} });
-    if(best&&bd<=MERGE){ const its=[...(best.items||[{x:best.x,y:best.y,rows:best.rows}]),p], x=its.reduce((s,q)=>s+q.x,0)/its.length, y=its.reduce((s,q)=>s+q.y,0)/its.length;
+    if(best&&bd<=2*MERGE){   // 가장 가까운 것까지 88px 이내(퍼짐은 아래에서 44px로 제한)
+      const its=[...(best.items||[{x:best.x,y:best.y,rows:best.rows}]),p], x=its.reduce((s,q)=>s+q.x,0)/its.length, y=its.reduce((s,q)=>s+q.y,0)/its.length;
       if(its.every(q=>Math.hypot(q.x-x,q.y-y)<=MERGE)){ Object.assign(best,{type:'grp',items:its,rows:its.flatMap(q=>q.rows),x,y,lab:null,boxes:[pb(x,y,24)]}); return; } }
     out.push({type:bld?'bld':'one',x:p.x,y:p.y,rows:p.rows,lab:null,name,sub,boxes:[box]}); });
   out.forEach(m=>{ const d=document.createElement('div'), ll=pj.coordsFromContainerPoint(new K.Point(m.x,m.y)), pos={y:la(ll),x:lo(ll)};
