@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
+<title>위치정보요약DB → 가맹점 좌표 (운영자용)</title>
+<style>body{font:15px/1.6 system-ui,'Malgun Gothic',sans-serif;max-width:720px;margin:24px auto;padding:0 16px;color:#1b1f24}
+h1{font-size:19px}.box{border:1px solid #dde1e6;border-radius:10px;padding:14px 16px;margin:14px 0;background:#fafbfc}
+#go{font:inherit;font-weight:700;padding:10px 18px;border-radius:8px;border:0;background:#0B6F63;color:#fff;cursor:pointer}#go:disabled{background:#9aa3ad}
+#dl{display:none;font-weight:700;color:#0B6F63;font-size:17px}pre{white-space:pre-wrap;font-size:13px;background:#fff;border:1px solid #e6e8eb;border-radius:8px;padding:10px}
+small{color:#5b6470}.bar{height:8px;background:#e6e8eb;border-radius:4px;overflow:hidden}.bar i{display:block;height:100%;width:0;background:#0B6F63}</style></head>
+<body><h1>위치정보요약DB → 가맹점 좌표 <small>(페이지 운영자용)</small></h1>
+<div class="box">① 받은 <b>202610_위치정보요약DB_전체분.zip</b>을 고르고 ② [변환]을 누르세요.<br>
+<small>파일은 <b>이 컴퓨터 브라우저 안에서만</b> 읽어요. 어디에도 올라가지 않아요(보안각서: 국외 반출 금지).<br>
+결과 <b>geo.json</b>에는 우리 가맹점 건물 주소와 그 좌표만 들어가요.</small></div>
+<p><input type="file" id="f" accept=".zip,.txt"> <button id="go" disabled>변환</button></p>
+<div class="bar"><i id="pb"></i></div><p id="st">파일을 고르세요.</p>
+<p><a id="dl" download="geo.json">⬇ geo.json 내려받기</a></p>
+<pre id="log"></pre>
+<script>
+// UTM-K(EPSG:5179, GRS80) → 경위도. Snyder 역변환
+function utmk2wgs(x,y){
+  const a=6378137, f=1/298.257222101, e2=f*(2-f), ep2=e2/(1-e2), k0=0.9996, lat0=38*Math.PI/180, lon0=127.5*Math.PI/180, FE=1e6, FN=2e6;
+  const M=p=>a*((1-e2/4-3*e2*e2/64-5*e2**3/256)*p-(3*e2/8+3*e2*e2/32+45*e2**3/1024)*Math.sin(2*p)+(15*e2*e2/256+45*e2**3/1024)*Math.sin(4*p)-(35*e2**3/3072)*Math.sin(6*p));
+  const m=M(lat0)+(y-FN)/k0, mu=m/(a*(1-e2/4-3*e2*e2/64-5*e2**3/256)), e1=(1-Math.sqrt(1-e2))/(1+Math.sqrt(1-e2));
+  const p1=mu+(3*e1/2-27*e1**3/32)*Math.sin(2*mu)+(21*e1*e1/16-55*e1**4/32)*Math.sin(4*mu)+(151*e1**3/96)*Math.sin(6*mu)+(1097*e1**4/512)*Math.sin(8*mu);
+  const s=Math.sin(p1), c=Math.cos(p1), t=Math.tan(p1), C1=ep2*c*c, T1=t*t, N1=a/Math.sqrt(1-e2*s*s), R1=a*(1-e2)/Math.pow(1-e2*s*s,1.5), D=(x-FE)/(N1*k0);
+  const lat=p1-(N1*t/R1)*(D*D/2-(5+3*T1+10*C1-4*C1*C1-9*ep2)*D**4/24+(61+90*T1+298*C1+45*T1*T1-252*ep2-3*C1*C1)*D**6/720);
+  const lon=lon0+(D-(1+2*T1+C1)*D**3/6+(5-2*C1+28*T1-3*C1*C1+8*ep2+24*T1*T1)*D**5/120)/c;
+  return [lon*180/Math.PI, lat*180/Math.PI];
+}
+
+const $=id=>document.getElementById(id), log=t=>{ $('log').textContent+=t+'\n'; };
+const nz=s=>s.replace(/\s+/g,''), num=s=>/^\d+$/.test(s)?parseInt(s,10):0;
+let NEED=null;
+fetch('need.json?v=1').then(r=>r.json()).then(j=>{ NEED=j; $('st').textContent=`요청 건물 ${j.b.length.toLocaleString()}곳 준비됨. 파일을 고르세요.`; $('go').disabled=!$('f').files.length; });
+$('f').addEventListener('change',()=>{ $('go').disabled=!NEED||!$('f').files.length; });
+// zip 중앙 디렉터리 읽기(라이브러리 없이)
+async function entries(file){
+  const tail=new DataView(await file.slice(Math.max(0,file.size-66000)).arrayBuffer()); let e=-1;
+  for(let i=tail.byteLength-22;i>=0;i--) if(tail.getUint32(i,true)===0x06054b50){ e=i; break; }
+  if(e<0) throw new Error('zip 끝 정보를 못 찾음');
+  let n=tail.getUint16(e+10,true), size=tail.getUint32(e+12,true), off=tail.getUint32(e+16,true);
+  if(off===0xffffffff){ // zip64
+    const l=e-20; if(tail.getUint32(l,true)!==0x07064b50) throw new Error('zip64 정보 없음');
+    const r=Number(tail.getBigUint64(l+8,true)), z=new DataView(await file.slice(r,r+56).arrayBuffer()); n=Number(z.getBigUint64(32,true)); size=Number(z.getBigUint64(40,true)); off=Number(z.getBigUint64(48,true)); }
+  const cd=new DataView(await file.slice(off,off+size).arrayBuffer()), out=[]; let p=0;
+  for(let i=0;i<n;i++){ if(cd.getUint32(p,true)!==0x02014b50) break;
+    const fl=cd.getUint16(p+8,true), meth=cd.getUint16(p+10,true); let cs=cd.getUint32(p+20,true), us=cd.getUint32(p+24,true);
+    const nl=cd.getUint16(p+28,true), xl=cd.getUint16(p+30,true), cl=cd.getUint16(p+32,true); let lo=cd.getUint32(p+42,true);
+    const nb=new Uint8Array(cd.buffer,p+46,nl), name=new TextDecoder(fl&0x800?'utf-8':'euc-kr').decode(nb);
+    let q=p+46+nl; const xe=q+xl; while(q<xe){ const id=cd.getUint16(q,true), ln=cd.getUint16(q+2,true); let r=q+4;
+      if(id===1){ if(us===0xffffffff){us=Number(cd.getBigUint64(r,true));r+=8;} if(cs===0xffffffff){cs=Number(cd.getBigUint64(r,true));r+=8;} if(lo===0xffffffff){lo=Number(cd.getBigUint64(r,true));} } q+=4+ln; }
+    out.push({name,meth,cs,us,lo}); p+=46+nl+xl+cl; }
+  return out; }
+async function* lines(file,en){
+  const h=new DataView(await file.slice(en.lo,en.lo+30).arrayBuffer()), start=en.lo+30+h.getUint16(26,true)+h.getUint16(28,true);
+  let s=file.slice(start,start+en.cs).stream(); if(en.meth===8) s=s.pipeThrough(new DecompressionStream('deflate-raw')); else if(en.meth!==0) throw new Error('지원 안 하는 압축 '+en.meth);
+  const rd=s.getReader(); let dec=null, buf='', done=0;
+  for(;;){ const {value,done:d}=await rd.read(); if(d) break; done+=value.length;
+    if(!dec){ let enc='utf-8'; try{ new TextDecoder('utf-8',{fatal:true}).decode(value.subarray(0,Math.min(value.length,65536)),{stream:true}); }catch(_){ enc='euc-kr'; } dec=new TextDecoder(enc); log(`  글자 인코딩: ${enc}`); }
+    buf+=dec.decode(value,{stream:true}); const ls=buf.split('\n'); buf=ls.pop(); yield [ls,done]; }
+  buf+=dec?dec.decode():''; if(buf) yield [[buf],done]; }
+$('go').addEventListener('click',async()=>{ $('go').disabled=true; $('log').textContent=''; const file=$('f').files[0];
+  try{
+    const KI=new Map(NEED.k.map((k,i)=>[k.join('|'),i])), PX=NEED.k.map(()=>[]), PY=NEED.k.map(()=>[]);
+    let files=[];
+    if(/\.zip$/i.test(file.name)){ const es=await entries(file); log(`zip 안 파일 ${es.length}개`); es.forEach(e=>log(`  ${e.name} (${(e.us/1048576).toFixed(1)}MB)`)); files=es.filter(e=>/\.txt$/i.test(e.name)); }
+    else files=[{txt:true}];
+    const tot=files.reduce((s,e)=>s+(e.us||file.size),0); let base=0, nRow=0, nDj=0, nBad=0, peek=0;
+    for(const en of files){ log(`읽는 중: ${en.name||file.name}`);
+      const it=en.txt?(async function*(){ const t=await file.text(); yield [t.split('\n'),file.size]; })():lines(file,en);
+      for await(const [ls,done] of it){
+        for(const ln0 of ls){ const ln=ln0.replace(/\r$/,''); if(!ln) continue; nRow++; const c=ln.split('|');
+          if(c.length<18){ nBad++; continue; } if(!c[3].includes('대전')) continue; nDj++;
+          if(peek<2){ peek++; log(`  [칸 확인] 칸 수 ${c.length} · 3:${c[3]} 4:${c[4]} 7:${c[7]} 8:${c[8]} 9:${c[9]} 10:${c[10]} 16·17: 숫자=${!isNaN(parseFloat(c[16]))&&!isNaN(parseFloat(c[17]))}`); }
+          const x=parseFloat(c[16]), y=parseFloat(c[17]); if(isNaN(x)||isNaN(y)){ nBad++; continue; }
+          const k=[c[4].trim(),nz(c[7]),(c[8].trim()==='1'||c[8].trim()==='Y')?1:0,num(c[9].trim()),num(c[10].trim())].join('|'), i=KI.get(k);
+          if(i!==undefined){ PX[i].push(x); PY[i].push(y); } }
+        $('pb').style.width=Math.min(100,(base+done)/tot*100).toFixed(1)+'%'; $('st').textContent=`읽는 중… ${nRow.toLocaleString()}줄 (대전 ${nDj.toLocaleString()})`; }
+      base+=en.us||file.size; }
+    const med=a=>{ const s=[...a].sort((p,q)=>p-q), m=s.length>>1; return s.length%2?s[m]:(s[m-1]+s[m])/2; };
+    const XY=NEED.k.map((k,i)=>{ let ix=i; if(!PX[i].length&&k[2]===0){ const j=KI.get([k[0],k[1],1,k[3],k[4]].join('|')); if(j!==undefined&&PX[j].length) ix=j; } if(!PX[ix].length) return null;
+      const [lon,lat]=utmk2wgs(med(PX[ix]),med(PY[ix])); return (lon>127.2&&lon<127.6&&lat>36.17&&lat<36.51)?[Math.round(lon*1e6)/1e6,Math.round(lat*1e6)/1e6]:'out'; });
+    const geo={}; let ok=0, miss=0, out=0, ap=0;
+    for(const [b,i,a] of NEED.b){ const v=XY[i]; if(v==='out') out++; else if(!v) miss++; else { geo[b]=v; ok++; if(a) ap++; } }
+    const blob=new Blob([JSON.stringify(geo)],{type:'application/json'}); $('dl').href=URL.createObjectURL(blob); $('dl').style.display='inline';
+    $('pb').style.width='100%';
+    const sum=`완료 · 전체 ${nRow.toLocaleString()}줄, 대전 ${nDj.toLocaleString()}줄, 칸 부족 ${nBad.toLocaleString()}줄\n건물 ${NEED.b.length.toLocaleString()}곳 중 좌표 ${ok.toLocaleString()}곳 (${(ok/NEED.b.length*100).toFixed(1)}%), 못 찾음 ${miss.toLocaleString()}, 대전 밖 ${out}, 지번 근사 ${ap}`;
+    $('st').textContent=sum; log(sum); log('위 [geo.json 내려받기]를 눌러 저장하세요.');
+  }catch(e){ log('오류: '+e.message); $('st').textContent='오류가 났어요. 아래 내용을 알려 주세요.'; }
+  $('go').disabled=false; });
+</script></body></html>
