@@ -265,6 +265,7 @@ body.mini .chip{font-size:11.5px;padding:5px 9px;gap:5px} body.mini .status{gap:
 .mg .bst,.mcw .bst{top:-19px}
 .bz{display:flex;align-items:center;gap:5px;margin:4px 0 0 2px;height:28px;padding:0 11px 0 8px;border-radius:999px;border:0;background:#1b1f24;color:#fff;font:600 12px Pretendard,sans-serif;box-shadow:0 1px 5px rgba(0,0,0,.25);white-space:nowrap;cursor:pointer}
 .bz svg{width:14px;height:14px}
+.bmore{flex:none;align-self:flex-start;padding:3px 10px;border-radius:999px;background:rgba(255,255,255,.92);font:500 11.5px Pretendard,sans-serif;color:#5b6470;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.12)}
 /* 크기 버튼 */
 #szb{flex-direction:column;gap:1px;color:var(--ink)} #szb b{font:800 15px/1 Pretendard,sans-serif} #szb small{font:600 8.5px/1 Pretendard,sans-serif;color:var(--sub)}
 /* ===== 크게 보기(어르신용): 미니보다 한 단계 큼 ===== */
@@ -517,7 +518,7 @@ function layoutLabels(){
   const proj=map.getProjection(), mw=document.querySelector('.mapwrap').getBoundingClientRect();
   const top=0; let bot=mw.height; if(innerWidth<=820) bot=Math.min(bot, panelEl().getBoundingClientRect().top-mw.top);
   // 지도 위에 떠 있는 제목·유종·상태·버튼 자리는 피해서 놓아요
-  const ui=[...document.querySelectorAll('.pill,.bar,.status,.ctrls')].map(e=>{const r=e.getBoundingClientRect(); return {x1:r.left-mw.left-4,y1:r.top-mw.top-4,x2:r.right-mw.left+4,y2:r.bottom-mw.top+4};}).filter(r=>r.x2>r.x1);
+  const ui=[...document.querySelectorAll('.pill,.bar,.status,.ctrls,.cbtn:not([hidden]),.cats:not([hidden]) .ccol:not([hidden])')].map(e=>{const r=e.getBoundingClientRect(); return {x1:r.left-mw.left-4,y1:r.top-mw.top-4,x2:r.right-mw.left+4,y2:r.bottom-mw.top+4};}).filter(r=>r.x2>r.x1);
   const hitUI=(b)=>ui.some(o=>b.x1<o.x2&&b.x2>o.x1&&b.y1<o.y2&&b.y2>o.y1);
   const cand=[];
   DATA.forEach((p,i)=>{ if(!visible(p)) return; const pr=priceOf(p); if(!pr) return;
@@ -846,6 +847,9 @@ document.body.classList.toggle('mini',!BIG); document.body.classList.toggle('big
 const U=Object.assign({sel:[],subs:{},all:{},fuel:null,every:false,lastFuel:null},LSG('cat')||{}); U.cur=null; U.open=true;
 // 처음(분류 기록 없음): 지금 본 사이트처럼 '주유·충전'+유종으로 시작(예전 사용자가 빈 지도 안 보게, 2026-11-14 A안)
 if(!LSG('cat')){ const sp=LSG('pref'), f=sp&&['B027','D047','K015'].includes(sp.fuel)?sp.fuel:'B027'; U.sel=[GAS]; U.fuel=f; U.lastFuel=f; }
+// 저장값이 깨졌어도 멈추지 않게(없는 유종 버림)
+if(!FUELS.some(f=>f[0]===U.fuel)) U.fuel=null; if(!FUELS.some(f=>f[0]===U.lastFuel)) U.lastFuel=null;
+if(!Array.isArray(U.sel)) U.sel=[]; if(!U.subs||typeof U.subs!=='object') U.subs={}; if(!U.all||typeof U.all!=='object') U.all={};
 // 분류 이름이 바뀐 뒤 예전에 저장된 선택 정리(없어진 대분류·소분류 이름 버림)
 U.sel=U.sel.filter(g=>CATS.some(c=>c[0]===g)); for(const g in U.subs){ const ok=CATS.find(c=>c[0]===g); U.subs[g]=ok&&ok[2]?U.subs[g].filter(s=>s in ok[2]):[]; }
 const saveU=()=>LSS('cat',{sel:U.sel,subs:U.subs,all:U.all,fuel:U.fuel,every:U.every,lastFuel:U.lastFuel});
@@ -865,7 +869,7 @@ let META=null; const ROWS={}, LOADING={};
 const gIdx=g=>META?META.groups.indexOf(g):-1;
 function subId(g,s){ return META.subIdx[g+'|'+s]; }
 function ensure(gs){ if(!META) return Promise.resolve(); return Promise.all(gs.map(g=>{ const i=gIdx(g); if(i<0||ROWS[i]) return null;
-  return LOADING[i]||(LOADING[i]=fetch(`odt/g${i}.json?v=${META.base}-${META.rev||1}`).then(r=>r.json()).then(rows=>{ const cb=!!META.cb; ROWS[i]=rows.map((r,k)=>({n:r[0],a:r[1],x:r[2],y:r[3],c:cb?CBC[r[4]]||'prep':'prep',s:r.slice(cb?5:4),g:i,k,o:i*100000+k,lq:(r[0]+' '+r[1]).toLowerCase()})); VER++; }).catch(()=>{})); })); }
+  return LOADING[i]||(LOADING[i]=fetch(`odt/g${i}.json?v=${META.base}-${META.rev||1}`).then(r=>r.json()).then(rows=>{ const cb=!!META.cb; ROWS[i]=rows.map((r,k)=>({n:r[0],a:r[1],x:r[2],y:r[3],c:cb?CBC[r[4]]||'prep':'prep',s:r.slice(cb?5:4),g:i,k,o:i*100000+k,lq:(r[0]+' '+r[1]).toLowerCase()})); VER++; }).catch(()=>{ delete LOADING[i]; })); })); }   // 실패하면 다음에 다시 불러옴
 // 캐시백 상태(2026-11-18 시 자료부터 g파일 5번째 칸): 1 제공·0 미제공·-1 파악 중. 칩(제공·미제공·확인 필요·파악 중)으로 거름
 const CBC={1:'ok',0:'no','-1':'prep'}, stOn=r=>!!state[r.c];
 // o = 원래 차례(대분류 번호→줄 번호), lq = 검색용 소문자 '상호 주소'(매번 만들지 않게 미리)
@@ -967,7 +971,8 @@ if(!PREF_KEYS.includes('prep')) PREF_KEYS.push('prep');
   c.addEventListener('click',()=>{ state.prep=!state.prep; c.classList.toggle('on',state.prep); savePref(); closeCard(); refresh(); }); }
 
 // ---- 주유소: 고른 경우에만, 핀은 캐시백 색 동그라미+주유기 ----
-const _sells=sells; sells=function(p){ return noFuel()?true:_sells(p); };   // '전체'+유종 미선택: 모든 주유소·충전소
+let anyFuel=false;   // 검색에서 주유·충전을 안 골랐을 때: 유종 상관없이 이름으로 찾기
+const _sells=sells; sells=function(p){ return anyFuel||noFuel()?true:_sells(p); };   // '전체'+유종 미선택: 모든 주유소·충전소
 const visGas=visible; visible=function(p){ return gasOn()&&visGas(p); };
 function gasPin(c,big){ const col={ok:'#0f9d8a',no:'#8a939e',check:'#d98a00'}[c], z=big?34:28, r=z/2-1.5, s=(big?.78:.64), o=(z-24*s)/2;
   const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${z}" height="${z}" viewBox="0 0 ${z} ${z}"><circle cx="${z/2}" cy="${z/2}" r="${r}" fill="${col}" stroke="#fff" stroke-width="2"/><g transform="translate(${o} ${o}) scale(${s})" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">${ICONS['gas-station']}</g></svg>`;
@@ -995,17 +1000,21 @@ function clearOv(){ closeStack(); OV.forEach(o=>o.setMap(null)); OV=[]; }
 const pinHTML=(icon,st,n,lab,name,sub)=>`<div class="pc">${ic(icon)}${n>1?`<em>${n}</em>`:''}</div>`+(lab?`<div class="pl pl-${lab}"><b>${e(name)}</b>${sub?`<small>${e(sub)}</small>`:''}</div>`:'');
 function closeStack(){ if(openSt){ if(openSt.host) openSt.host.style.zIndex=openSt.z; openSt.st.remove(); openSt.el.classList.remove('open'); const pl=openSt.el.querySelector('.pl'); if(pl) pl.style.display=''; openSt=null; } }
 function openStack(el,items,zoomTo,left){ closeStack(); const S=activeSubs(), c=map.getCenter(), cy=la(c), cx=lo(c);
-  const list=[...items].sort((a,b)=>rk(a)-rk(b)||dist2(a,cy,cx)-dist2(b,cy,cx));   // 켜진 칩(제공 먼저) → 가까운 순
+  // 켜진 칩(제공 먼저) → 가까운 순. 멀리 볼 때 숫자 원 하나에 수만 곳이 들 수 있어 앞쪽 100곳만 목록으로(전부 그리면 폰이 몇 초 멈춤, 2026-11-19). 같은 건물(네모)은 확대해도 그대로라 전부
+  const MAXS=zoomTo?100:1e9, list=topK(items,MAXS,rk,r=>dist2(r,cy,cx)), more=items.length-list.length;
   const st=document.createElement('div'); st.className='bst'; st.style.left=left+'px';
-  st.innerHTML=`<div class="bsc">${list.map((r,i)=>`<button class="bi" data-i="${i}"><span class="mp sm ${stCls(r)}"><span class="pc">${ic(iconOf(r,S))}</span></span>${e(r.n)}</button>`).join('')}</div>`+(zoomTo?`<button class="bz">${ic('zoom')}지도 확대해서 보기</button>`:'');
+  st.innerHTML=`<div class="bsc">${list.map((r,i)=>`<button class="bi" data-i="${i}"><span class="mp sm ${stCls(r)}"><span class="pc">${ic(iconOf(r,S))}</span></span>${e(r.n)}</button>`).join('')}${more>0?`<div class="bmore">외 ${more.toLocaleString()}곳 · 지도를 확대해 보세요</div>`:''}</div>`+(zoomTo?`<button class="bz">${ic('zoom')}지도 확대해서 보기</button>`:'');
   const sc=st.firstChild; sc.addEventListener('scroll',()=>mask(sc),{passive:true});
   st.addEventListener('click',ev=>{ ev.stopPropagation(); const b=ev.target.closest('.bi'); if(b){ openAny(list[+b.dataset.i]); return; }
     if(ev.target.closest('.bz')){ closeStack(); map.setLevel(Math.max(1,map.getLevel()-2),{animate:true}); map.panTo(zoomTo); } });
   el.appendChild(st); el.classList.add('open'); const pl=el.querySelector('.pl'); if(pl) pl.style.display='none';
   requestAnimationFrame(()=>mask(sc)); const host=el.parentElement, z=host?host.style.zIndex:''; if(host) host.style.zIndex='1000'; openSt={el,st,host,z}; }
 const dist2=(r,cy,cx)=>{ const dy=r.y-cy, dx=(r.x-cx)*0.807; return dx*dx+dy*dy; };   // 위도 36°에서 경도 1°≈0.807×위도 1°
-function inBox(){ const A=area(), pj=map.getProjection(), a=pj.coordsFromContainerPoint(new K.Point(0,A.top)), b=pj.coordsFromContainerPoint(new K.Point(A.W,A.bot));
+function inBox(bot){ const A=area(), pj=map.getProjection(), a=pj.coordsFromContainerPoint(new K.Point(0,A.top)), b=pj.coordsFromContainerPoint(new K.Point(A.W,bot??A.bot));
   return {n:Math.max(la(a),la(b)),s:Math.min(la(a),la(b)),w:Math.min(lo(a),lo(b)),e:Math.max(lo(a),lo(b))}; }
+// 폰에서 검색창을 누르면 목록이 위로 펼쳐져 지도를 거의 가림 → 검색의 '이 지도 안'은 누르기 직전에 보이던 지도 영역으로(2026-11-19)
+let viewBot=null;
+const scopeBox=()=>inBox(viewBot!=null&&panelEl().style.height?viewBot:undefined);
 // 멀리 볼 때 화면 좌표 빨리 구하기: 가게마다 지도 엔진에 묻지 않고, 화면 9곳만 정확히 물어 2차식을 맞춘 뒤 그 식으로 계산
 // (카카오·네이버 투영에서 오차 0.01px 미만). 가게 12곳을 정확히 물어 0.05px 넘게 다르면 안 쓰고 하나씩 정확히 계산(null)
 // 카카오는 화면 좌표를 정수 px로 반올림해 줌 → 위 2차식은 검사에서 걸림. 대신 카카오 내부 좌표(toCoords, 반올림 전)를 가게마다 한 번 구해 두고
@@ -1081,7 +1090,7 @@ function drawOdt(){
   const cx=A.W/2, cy=(A.top+A.bot)/2, out=[];
   pins.sort((a,b)=>Math.hypot(a.x-cx,a.y-cy)-Math.hypot(b.x-cx,b.y-cy)).forEach(p=>{
     const O=out.flatMap(m=>m.boxes), r0=p.rows[0], bld=p.rows.length>1, box=bld?pb(p.x,p.y,F.R+1):pcir(p.x,p.y,F.R+1);
-    const name=bld?(r0.a.split(' ').slice(1).join(' ').split(',')[0]):r0.n, sub=bld?`${p.rows.length}곳`:subOf(r0,S);
+    const name=bld?(r0.a.split(' ').slice(1).join(' ').split(/[,(]/)[0].trim()):r0.n, sub=bld?`${p.rows.length}곳`:subOf(r0,S);
     if(!O.some(o=>hit(o,box,1))){ const sp=spot(p.x,p.y,name,sub,O);
       if(sp){ out.push({type:bld?'bld':'one',x:p.x,y:p.y,rows:p.rows,lab:sp.k,name,sub,boxes:[box,sp.c]}); return; } }
     // 겹치거나 이름표 자리가 없으면 88px 안의 핀·건물·묶음과 가까운 순으로 합쳐 봄(퍼짐 44px 안일 때만, 건물 핀도 포함, 2026-11-14)
@@ -1102,7 +1111,7 @@ function drawOdt(){
 }
 // ---- 가게 정보창 ----
 function openRow(r,pan){ collapse(); closeStack(); closeCard(); const S=activeSubs();
-  const L=placeLinks({n:r.n,x:r.x,y:r.y,a:'대전 '+r.a,g:'',nn:''});
+  const L=placeLinks({n:r.n,x:r.x,y:r.y,a:'대전 '+r.a.split(/[,(]/)[0].trim(),g:'',nn:''});   // 지도 검색엔 건물 주소까지만(층·호·동 빼고)
   const el=document.createElement('div');
   const cbb={ok:['b-ok','캐시백 제공'],no:['b-no','캐시백 미제공'],prep:['b-prep','캐시백 여부 파악 중']}[r.c]||['b-prep','캐시백 여부 파악 중'];
   el.innerHTML=`<div class="card"><button class="x">×</button><span class="badge ${cbb[0]}" style="font-size:11px;font-weight:700;border-radius:6px;padding:3px 6px">${cbb[1]}</span><h3>${e(r.n)}</h3><div class="cg">${catLine(r)}</div><div class="row">대전 ${e(r.a)}</div><div class="links"><a href="${L.place}"${L.placeApp?` data-app="${L.placeApp}"`:''} target="_blank" rel="noopener">${L.name}</a><a class="primary" href="${L.nav}"${L.app?` data-app="${L.app}"`:''} target="_blank" rel="noopener">길찾기</a></div></div>`;
@@ -1152,11 +1161,13 @@ async function renderSearch(list,cnt,cy,cx){ const q=state.q, my=++renderSearch.
   const S=activeSubs(), selG=new Set(U.every?[]:U.sel.filter(g=>g!==GAS&&!U.all[g]).map(gIdx)), hitR=r=>r.lq.includes(q);
   const A=[],B=[],C=[];
   for(const i in ROWS) for(const r of ROWS[i]){ if(!hitR(r)) continue; if(r.s.some(id=>S.has(id))) A.push({r}); else if(r.s.some(id=>selG.has(META.subs[id][0]))) B.push({r}); else C.push({r}); }
-  DATA.forEach((p,i)=>{ if(!visGas(p)) return; (gasOn()?A:C).push({gas:i,p}); });
+  // 주유소도 다른 업종처럼 캐시백 칩으로 거르지 않고 정렬에만 씀. 주유·충전을 안 골랐으면 유종 상관없이 이름으로
+  const gasQ=p=>{ const k=p.c, o=state[k]; state[k]=true; anyFuel=!gasOn(); try{ return visGas(p); } finally{ state[k]=o; anyFuel=false; } };
+  DATA.forEach((p,i)=>{ if(!gasQ(p)) return; (gasOn()?A:C).push({gas:i,p}); });
   const ord=(x,n)=>topK(x,n,rankOf,it=>dist2(it.p||it.r,cy,cx));   // 켜진 칩 → 가까운 순, 보여줄 n개만
   // '이 지도 안'이면 검색도 지금 지도 안에서만. 밖에 더 있으면 '대전 전체' 안내
   const full=A.length+B.length+C.length;
-  if(state.scope==='view'&&map){ const X=inBox(), inb=it=>it.gas!=null?inView(it.p):(it.r.y<=X.n&&it.r.y>=X.s&&it.r.x>=X.w&&it.r.x<=X.e); [A,B,C].forEach(arr=>{ const k=arr.filter(inb); arr.length=0; arr.push(...k); }); }
+  if(state.scope==='view'&&map){ const X=scopeBox(), inb=it=>{ const o=it.p||it.r; return o.y<=X.n&&o.y>=X.s&&o.x>=X.w&&o.x<=X.e; }; [A,B,C].forEach(arr=>{ const k=arr.filter(inb); arr.length=0; arr.push(...k); }); }
   const shown=A.length+B.length+C.length, toAll=n=>`<a href="#" class="toAll">대전 전체에 ${n.toLocaleString()}곳</a>`;
   if(!shown&&full){ list.innerHTML=`<div class="empty">이 지도 안에는 없어요 · ${toAll(full)}</div>`; bindAll(list); cnt.textContent='검색 0곳'; return; }
   const row=it=>it.gas!=null?gasRow(it.gas,cy,cx):itemRow(it.r,cy,cx);
@@ -1182,14 +1193,15 @@ document.getElementById('list').addEventListener('click',ev=>{ const it=ev.targe
   const [g,k]=it.dataset.r.split(':').map(Number); const r=ROWS[g]&&ROWS[g][k]; if(r) openRow(r,true); },true);
 // 검색하면 분류 접고 리스트를 캐시백 칩 아래까지 올림
 const qEl=document.getElementById('q');
-qEl.addEventListener('focus',()=>{ collapse(); if(innerWidth<=820){ const st=document.querySelector('.status').getBoundingClientRect(); panelEl().style.height=(innerHeight-st.bottom-8)+'px'; panelEl().classList.remove('min'); document.body.classList.remove('min'); } });
+qEl.addEventListener('focus',()=>{ collapse(); if(innerWidth<=820){ if(!panelEl().style.height) viewBot=panelEl().getBoundingClientRect().top-document.querySelector('.mapwrap').getBoundingClientRect().top; const st=document.querySelector('.status').getBoundingClientRect(); panelEl().style.height=(innerHeight-st.bottom-8)+'px'; panelEl().classList.remove('min'); document.body.classList.remove('min'); } });
 qEl.addEventListener('blur',()=>{ if(!qEl.value.trim()) panelEl().style.height=''; });
 const _setPanel=setPanel; setPanel=function(min){ if(min||!state.q) panelEl().style.height=''; _setPanel(min); setTimeout(()=>{ fit(); drawOdt(); },280); };
 
 // ---- 새로 그리기 ----
 const _render=render; render=function(){ _render(); if(mixed()) markers.forEach((m,i)=>{ if(i!==selI) m.setMap(null); }); drawOdt(); };
 const _ll=layoutLabels; layoutLabels=function(){ if(mixed()){ LBL.forEach(o=>{ if(o&&o.__on){ o.setMap(null); o.__on=false; } }); return; } _ll(); };
-const _oc=openCard; openCard=function(i,pan){ _oc(i,pan); if(mixed()) markers[i].setMap(map); };
+// 주유소를 눌러도(말풍선·핀·리스트) 분류 열을 접음 — 안 접으면 정보창이 분류 열 밑에 깔림(2026-11-19)
+const _oc=openCard; openCard=function(i,pan){ collapse(); closeStack(); _oc(i,pan); if(mixed()) markers[i].setMap(map); };
 function refresh(){ LIMIT=60; render(); }
 // 지도 준비되면: 주유 핀 바꾸기, 이동·확대 때 다시 그리기, 끌면 분류 접기
 (function wait(){ if(typeof map==='undefined'||!map||!markers.length) return setTimeout(wait,120);
